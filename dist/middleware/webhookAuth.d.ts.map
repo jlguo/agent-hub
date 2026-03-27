@@ -1,0 +1,1 @@
+{"version":3,"file":"webhookAuth.d.ts","sourceRoot":"","sources":["../../server/src/middleware/webhookAuth.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,OAAO,EAAE,QAAQ,EAAE,YAAY,EAAE,MAAM,SAAS,CAAC;AAE1D;;;;;GAKG;AACH,wBAAgB,kBAAkB,CAAC,GAAG,EAAE,OAAO,EAAE,GAAG,EAAE,QAAQ,EAAE,IAAI,EAAE,YAAY,kDAoCjF"}

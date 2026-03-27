@@ -1,0 +1,47 @@
+{
+  "name": "agent-hub",
+  "version": "1.0.0",
+  "description": "Multi-agent collaboration platform for realistic group conversations.",
+  "main": "server/dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch server/src/index.ts",
+    "build": "tsc -p server/tsconfig.json",
+    "start": "node server/dist/index.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "lint": "eslint server/src --ext .ts"
+  },
+  "keywords": [
+    "agent",
+    "ai",
+    "conversation",
+    "multi-agent"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^5.10.0",
+    "@types/dotenv": "^6.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.3.1",
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
+    "@types/ws": "^8.5.10",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.56.0",
+    "playwright": "^1.58.2",
+    "prisma": "^5.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}

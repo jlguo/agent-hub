@@ -1,0 +1,82 @@
+import { Router } from 'express';
+import { prisma } from '../index.js';
+import { triggerAgentResponse } from '../services/MessageService.js';
+import { getIO } from '../lib/socket.js';
+export const router = Router();
+// GET /api/messages/rooms/:roomId - Get messages for a room
+router.get('/rooms/:roomId', async (req, res) => {
+    try {
+        const { roomId } = req.params;
+        const { limit = '50' } = req.query;
+        const messages = await prisma.message.findMany({
+            where: { roomId },
+            include: {
+                agent: {
+                    select: { name: true, avatar: true },
+                },
+            },
+            orderBy: { createdAt: 'asc' },
+            take: parseInt(limit),
+        });
+        res.json(messages);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+// POST /api/rooms/:roomId/messages - Send a message
+router.post('/rooms/:roomId', async (req, res) => {
+    try {
+        const { roomId } = req.params;
+        const { content, role = 'user', agentId } = req.body;
+        if (!content) {
+            return res.status(400).json({ error: 'Content is required' });
+        }
+        // Verify room exists
+        const room = await prisma.room.findUnique({
+            where: { id: roomId },
+            include: {
+                agents: {
+                    include: {
+                        relationshipsAsA: true,
+                        relationshipsAsB: true,
+                    },
+                },
+            },
+        });
+        if (!room) {
+            return res.status(404).json({ error: 'Room not found' });
+        }
+        const message = await prisma.message.create({
+            data: {
+                roomId,
+                agentId,
+                role,
+                content,
+            },
+            include: {
+                agent: {
+                    select: { name: true, avatar: true },
+                },
+            },
+        });
+        // Emit WebSocket event
+        const io = getIO();
+        io.to(roomId).emit('message:new', {
+            message: {
+                ...message,
+                agentName: message.agent?.name || undefined,
+            },
+        });
+        // If user message, trigger agent response (async, non-blocking)
+        if (role === 'user') {
+            triggerAgentResponse(roomId, content, room.description || undefined)
+                .catch(console.error);
+        }
+        res.status(201).json(message);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+//# sourceMappingURL=messages.js.map
