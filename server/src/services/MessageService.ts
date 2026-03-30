@@ -267,6 +267,7 @@ export async function triggerAgentResponse(
         io.to(roomId).emit('message:new', {
           ...agentMessage,
           agentName: agentMessage.agent?.name || respondingAgent.name,
+          agentAvatar: agentMessage.agent?.avatar || undefined,
         });
         
         console.log(`[MessageService] ✅ ${respondingAgent.name} responded successfully${respondingAgent.isFallback ? ' (smart fallback)' : ''}`);
@@ -370,6 +371,7 @@ export async function triggerAgentResponse(
                     const emitData = {
                       ...followupMessage,
                       agentName: followupMessage.agent?.name || mentionedAgent.name,
+                      agentAvatar: followupMessage.agent?.avatar || undefined,
                     };
                     io.to(roomId).emit('message:new', emitData);
                     
