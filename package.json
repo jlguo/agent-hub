@@ -1,6 +1,6 @@
 {
   "name": "agent-hub",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "description": "Multi-agent collaboration platform for realistic group conversations.",
   "main": "server/dist/index.js",
   "type": "module",
