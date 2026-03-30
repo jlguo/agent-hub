@@ -68,7 +68,9 @@ async function selectDiscussionParticipants(
 export async function triggerAgentDiscussion(
   roomId: string,
   topic: string,
-  initiatorId?: string
+  initiatorId?: string,
+  sendToExternal?: (chatId: string, content: string) => Promise<void>,
+  externalChatId?: string
 ) {
   try {
     console.log(`[DiscussionService] Starting discussion: "${topic}" in room ${roomId}`);
@@ -104,10 +106,18 @@ export async function triggerAgentDiscussion(
       data: startMessageData,
     });
     
+    console.log('[DiscussionService] Emitting discussion start to room:', roomId);
     io.to(roomId).emit('message:new', {
       ...startMessage,
       agentName: undefined,
     });
+    console.log('[DiscussionService] ✅ Discussion start emitted to WebSocket');
+    
+    // Send to Feishu if callback provided
+    if (sendToExternal && externalChatId) {
+      sendToExternal(externalChatId, startMessage.content).catch(console.error);
+      console.log('[DiscussionService] ✅ Discussion start sent to Feishu');
+    }
     
     console.log('[DiscussionService] Discussion start message saved');
     
@@ -209,11 +219,21 @@ export async function triggerAgentDiscussion(
       });
       
       // Emit to frontend
+      console.log('[DiscussionService] Emitting discussion turn', turn + 1, 'to room:', roomId);
       io.to(roomId).emit('message:new', {
         ...discussionMessage,
         agentName: discussionMessage.agent?.name || currentSpeaker.name,
+        agentAvatar: discussionMessage.agent?.avatar || undefined,
         isDiscussion: true,
       });
+      console.log('[DiscussionService] ✅ Discussion turn', turn + 1, 'emitted to WebSocket');
+      
+      // Send to Feishu if callback provided
+      if (sendToExternal && externalChatId) {
+        const formattedContent = `${discussionMessage.agent?.avatar || ''} ${discussionMessage.agent?.name || currentSpeaker.name}: ${discussionMessage.content}`;
+        sendToExternal(externalChatId, formattedContent).catch(console.error);
+        console.log('[DiscussionService] ✅ Discussion turn', turn + 1, 'sent to Feishu');
+      }
       
       console.log(`[DiscussionService] Turn ${turn + 1}/${numTurns}: ${currentSpeaker.name} responded`);
       
@@ -241,6 +261,13 @@ export async function triggerAgentDiscussion(
       ...endMessage,
       agentName: undefined,
     });
+    console.log('[DiscussionService] ✅ Discussion end emitted to WebSocket');
+    
+    // Send to Feishu if callback provided
+    if (sendToExternal && externalChatId) {
+      sendToExternal(externalChatId, endMessage.content).catch(console.error);
+      console.log('[DiscussionService] ✅ Discussion end sent to Feishu');
+    }
     
     console.log('[DiscussionService] Discussion end message saved');
     

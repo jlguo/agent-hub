@@ -10,6 +10,8 @@ import { router as agentsRouter } from './routes/agents.js';
 import { router as messagesRouter } from './routes/messages.js';
 import webhookRouter from './routes/webhooks.js';
 import { initializeIO } from './lib/socket.js';
+import { feishuOfficial } from './services/FeishuOfficialService.js';
+import { handleFeishuMessage } from './services/MessageService.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -69,7 +71,7 @@ io.on('connection', (socket) => {
 
   socket.on('room:join', (data: { roomId: string }) => {
     socket.join(data.roomId);
-    console.log(`Client ${socket.id} joined room ${data.roomId}`);
+    console.log(`✅ Client ${socket.id} joined room ${data.roomId}`);
   });
 
   socket.on('message:send', async (data: { roomId: string; content: string }) => {
@@ -96,6 +98,22 @@ httpServer.listen(parseInt(PORT as string), HOST as string, async () => {
   // Start Session Guardian
   await SessionGuardian.start();
   console.log('✓ Session Guardian started');
+
+  // Start Feishu WebSocket (if configured)
+  if (process.env.FEISHU_APP_ID && process.env.FEISHU_APP_SECRET) {
+    console.log('📱 Starting Feishu WebSocket (Official SDK)...');
+    
+    // Connect Feishu message handler to MessageService
+    feishuOfficial.on('message', async (normalizedMessage, chatId) => {
+      await handleFeishuMessage(normalizedMessage, chatId, feishuOfficial.sendToFeishu.bind(feishuOfficial));
+    });
+
+    // Start WebSocket connection (SDK handles authentication)
+    await feishuOfficial.start();
+    console.log('✓ Feishu WebSocket started');
+  } else {
+    console.log('⚠️  Feishu not configured (missing credentials)');
+  }
 });
 
 // Graceful shutdown

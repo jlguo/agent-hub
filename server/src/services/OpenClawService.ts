@@ -88,10 +88,24 @@ class OpenClawServiceClass {
       
       // Execute command with extended timeout
       // OpenClaw needs time for: plugin loading + agent init + LLM call + response processing
-      const { stdout, stderr } = await execAsync(command, {
-        timeout: 120000, // 120s timeout (was 30s - too short for LLM calls)
-        maxBuffer: 10 * 1024 * 1024, // 10MB buffer
-      });
+      let stdout: string;
+      let stderr: string;
+      
+      try {
+        const result = await execAsync(command, {
+          timeout: 120000, // 120s timeout (was 30s - too short for LLM calls)
+          maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+        });
+        stdout = result.stdout;
+        stderr = result.stderr;
+      } catch (execError: any) {
+        console.error(`[OpenClaw CLI] Command failed: ${execError.message}`);
+        if (execError.stdout) stdout = execError.stdout;
+        if (execError.stderr) stderr = execError.stderr;
+        if (!stdout) {
+          throw new Error(`OpenClaw CLI execution failed: ${execError.message}`);
+        }
+      }
       
       const duration = ((Date.now() - startTime) / 1000).toFixed(1);
       const durationNum = parseFloat(duration);
@@ -105,6 +119,14 @@ class OpenClawServiceClass {
       
       if (stderr) {
         console.error('[OpenClaw CLI] stderr:', stderr);
+      }
+      
+      // Handle case where stdout is undefined or empty
+      if (!stdout) {
+        console.warn('[OpenClaw CLI] No stdout from command');
+        return {
+          content: 'No response from agent',
+        };
       }
       
       let responseText = stdout.trim();
@@ -181,7 +203,7 @@ class OpenClawServiceClass {
     prompt += `- Curiosity: ${personality.curiosity}/10\n\n`;
 
     // Relationships
-    if (relationships.length > 0) {
+    if (relationships && relationships.length > 0) {
       prompt += `Relationships:\n`;
       relationships.forEach(rel => {
         prompt += `- ${rel.with}: ${rel.type} (${rel.strength}% close)\n`;

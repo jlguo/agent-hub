@@ -262,8 +262,12 @@ export async function triggerAgentResponse(
           },
         });
         
+        console.log(`[MessageService] ✅ Agent message saved: ${agentMessage.id}`);
+        console.log(`[MessageService] 📡 About to emit agent response to WebSocket, roomId: ${roomId}`);
+        
         // Emit WebSocket event to frontend
         const io = getIO();
+        console.log(`[MessageService] 📡 Got IO instance, emitting agent response to room: ${roomId}`);
         io.to(roomId).emit('message:new', {
           ...agentMessage,
           agentName: agentMessage.agent?.name || respondingAgent.name,
@@ -396,5 +400,237 @@ export async function triggerAgentResponse(
   } catch (error: any) {
     console.error('[MessageService] ❌ Error triggering agent response:', error.message);
     // Don't rethrow - agent response is best-effort
+  }
+}
+
+/**
+ * Handle message from Feishu (WebSocket integration)
+ * Called by FeishuWebSocketService when a message is received
+ */
+export async function handleFeishuMessage(
+  normalizedMessage: {
+    roomId: string;
+    senderType: 'human' | 'agent';
+    content: string;
+    metadata?: any;
+  },
+  feishuChatId: string,
+  sendToFeishu: (chatId: string, content: string) => Promise<void>
+) {
+  try {
+    console.log('[MessageService] 📨 Handling Feishu message:', normalizedMessage.content);
+
+    // Save message to database
+    const message = await prisma.message.create({
+      data: {
+        roomId: normalizedMessage.roomId,
+        senderType: normalizedMessage.senderType,
+        content: normalizedMessage.content,
+        metadata: normalizedMessage.metadata ? JSON.stringify(normalizedMessage.metadata) : null,
+      },
+      include: {
+        agent: { select: { name: true, avatar: true } },
+      },
+    });
+
+    console.log('[MessageService] ✅ Feishu message saved:', message.id);
+    console.log('[MessageService] 📡 About to emit to WebSocket, roomId:', normalizedMessage.roomId);
+
+    // Emit to WebSocket (for Web UI clients)
+    const io = getIO();
+    console.log('[MessageService] 📡 Got IO instance, emitting to room:', normalizedMessage.roomId);
+    io.to(normalizedMessage.roomId).emit('message:new', {
+      ...message,
+      agentName: message.agent?.name || undefined,
+      agentAvatar: message.agent?.avatar || undefined,
+    });
+
+    // If human message, check for discussion trigger or normal agent response
+    if (normalizedMessage.senderType === 'human') {
+      console.log('[MessageService] 🔥 Triggering agent response for Feishu message');
+      
+      // Get room for context
+      const room = await prisma.room.findUnique({
+        where: { id: normalizedMessage.roomId },
+        include: {
+          agents: {
+            include: {
+              relationshipsAsA: true,
+              relationshipsAsB: true,
+            },
+          },
+        },
+      });
+
+      if (!room) {
+        console.error('[MessageService] Room not found:', normalizedMessage.roomId);
+        return;
+      }
+
+      // Check if this is a discussion trigger
+      const discussionTopic = normalizedMessage.content.match(/^\/discuss\s+(.+)/i)?.[1]?.trim() ||
+                             normalizedMessage.content.match(/^let's discuss\s+(.+)/i)?.[1]?.trim() ||
+                             normalizedMessage.content.match(/^咱们讨论一下\s*(.+)/i)?.[1]?.trim();
+      
+      if (discussionTopic) {
+        // Trigger autonomous agent discussion
+        console.log(`[MessageService] Discussion triggered from Feishu: "${discussionTopic}"`);
+        import('./DiscussionService.js').then(({ triggerAgentDiscussion }) => {
+          triggerAgentDiscussion(normalizedMessage.roomId, discussionTopic, undefined, sendToFeishu, feishuChatId)
+            .catch(console.error);
+        });
+      } else {
+        // Normal agent response with callback to send back to Feishu
+        await triggerAgentResponseWithCallback(
+          normalizedMessage.roomId,
+          normalizedMessage.content,
+          room.description || undefined,
+          async (agentMessage) => {
+            // This callback is called when agent responds
+            const agentName = agentMessage.agent?.name || 'Agent';
+            const agentAvatar = agentMessage.agent?.avatar || '';
+            
+            // Format: "👩 Mom: [message]"
+            const formattedContent = `${agentAvatar} ${agentName}: ${agentMessage.content}`;
+            
+            // Send to Feishu
+            await sendToFeishu(feishuChatId, formattedContent);
+            console.log('[MessageService] ✅ Agent response sent to Feishu');
+          }
+        );
+      }
+    }
+
+  } catch (error: any) {
+    console.error('[MessageService] ❌ Error handling Feishu message:', error.message);
+  }
+}
+
+/**
+ * Trigger agent response with callback for custom delivery (Feishu, etc.)
+ */
+async function triggerAgentResponseWithCallback(
+  roomId: string,
+  userMessage: string,
+  roomDescription: string | undefined,
+  onAgentResponse: (message: any) => Promise<void>
+) {
+  // Same logic as triggerAgentResponse but with callback instead of WebSocket emit
+  // This is a simplified version - in production you'd refactor to share code
+  
+  try {
+    // Check for @mentions (100% priority)
+    const mentions = parseMentions(userMessage);
+    let selectedAgents: Agent[] = [];
+
+    if (mentions.length > 0) {
+      // Parse @mentions and select mentioned agents
+      const allAgents = await prisma.agent.findMany({
+        where: { roomId },
+        include: {
+          relationshipsAsA: true,
+          relationshipsAsB: true,
+        },
+      });
+
+      for (const mention of mentions) {
+        const mentionedAgent = allAgents.find(agent =>
+          agent.name.toLowerCase() === mention ||
+          agent.id.toLowerCase() === mention ||
+          (agent.role && agent.role.toLowerCase() === mention)
+        );
+
+        if (mentionedAgent) {
+          if (isOnCooldown(mentionedAgent.id)) {
+            console.log(`[MessageService] Agent ${mentionedAgent.name} on cooldown, skipping`);
+            continue;
+          }
+          selectedAgents.push(mentionedAgent);
+          MENTION_COOLDOWNS.set(mentionedAgent.id, Date.now());
+        }
+      }
+    }
+
+    // If no @mentions, use heat-based selection
+    if (selectedAgents.length === 0) {
+      // Random selection with heat-based probability
+      const responseChance = Math.random();
+      const shouldRespond = responseChance < 0.6; // 60% base chance
+
+      if (!shouldRespond) {
+        console.log('[MessageService] Random check failed, skipping response');
+        return;
+      }
+
+      const allAgents = await prisma.agent.findMany({
+        where: { roomId },
+      });
+
+      if (allAgents.length > 0) {
+        const randomAgent = allAgents[Math.floor(Math.random() * allAgents.length)];
+        selectedAgents.push(randomAgent);
+      }
+    }
+
+    // Generate responses for selected agents
+    for (const agent of selectedAgents) {
+      try {
+        // Generate OpenClaw session ID (format: family-{agentName})
+        const sessionId = `family-${agent.name.toLowerCase()}`;
+        
+        const response = await OpenClawService.sendMessage(
+          userMessage,
+          agent.id,
+          sessionId,
+          {
+            agentName: agent.name,
+            agentRole: agent.role || 'Family member',
+            personality: {
+              talkativeness: agent.talkativeness || 7,
+              empathy: agent.empathy || 6,
+              curiosity: agent.curiosity || 8,
+            },
+          },
+          false, // Don't deliver to Feishu (we use callback)
+          undefined,
+          undefined
+        );
+
+        // Save agent response
+        const agentMessage = await prisma.message.create({
+          data: {
+            roomId,
+            agentId: agent.id,
+            senderType: 'agent',
+            content: response.content,
+          },
+          include: {
+            agent: { select: { name: true, avatar: true } },
+          },
+        });
+
+        console.log(`[MessageService] ✅ Agent message saved: ${agentMessage.id}`);
+        console.log(`[MessageService] 📡 About to emit agent response to WebSocket, roomId: ${roomId}`);
+        
+        // Emit WebSocket event to frontend (Web UI)
+        const io = getIO();
+        console.log(`[MessageService] 📡 Got IO instance, emitting agent response to room: ${roomId}`);
+        io.to(roomId).emit('message:new', {
+          ...agentMessage,
+          agentName: agentMessage.agent?.name || agent.name,
+          agentAvatar: agentMessage.agent?.avatar || undefined,
+        });
+        console.log(`[MessageService] ✅ WebSocket emit complete for agent response`);
+
+        // Call the delivery callback (Feishu)
+        await onAgentResponse(agentMessage);
+
+      } catch (error: any) {
+        console.error(`[MessageService] Error with ${agent.name} response:`, error.message);
+      }
+    }
+
+  } catch (error: any) {
+    console.error('[MessageService] Error in triggerAgentResponseWithCallback:', error.message);
   }
 }
