@@ -32,7 +32,7 @@ router.get('/rooms/:roomId', async (req: Request, res: Response) => {
 router.post('/rooms/:roomId', async (req: Request, res: Response) => {
   try {
     const { roomId } = req.params;
-    const { content, role = 'user', agentId } = req.body;
+    const { content, senderType = 'human', agentId } = req.body;
 
     if (!content) {
       return res.status(400).json({ error: 'Content is required' });
@@ -59,7 +59,7 @@ router.post('/rooms/:roomId', async (req: Request, res: Response) => {
       data: {
         roomId,
         agentId,
-        role,
+        senderType,
         content,
       },
       include: {
@@ -72,14 +72,12 @@ router.post('/rooms/:roomId', async (req: Request, res: Response) => {
     // Emit WebSocket event
     const io = getIO();
     io.to(roomId).emit('message:new', {
-      message: {
-        ...message,
-        agentName: message.agent?.name || undefined,
-      },
+      ...message,
+      agentName: message.agent?.name || undefined,
     });
 
-    // If user message, trigger agent response (async, non-blocking)
-    if (role === 'user') {
+    // If human message, trigger agent response (async, non-blocking)
+    if (senderType === 'human') {
       triggerAgentResponse(roomId, content, room.description || undefined)
         .catch(console.error);
     }

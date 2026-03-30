@@ -51,12 +51,23 @@ class OpenClawServiceClass {
     replyAccount?: string,
     replyTo?: string
   ): Promise<OpenClawResponse> {
+    const startTime = Date.now();
+    
     try {
-      // Build CLI command
+      // Build CLI command with context
       // Format: openclaw agent --message "text" --agent "name" --session-id "id" [--deliver] [--reply-account "account"] [--reply-to "chatId"]
+      
+      // Build enhanced message with agent context (personality + relationships)
+      let enhancedMessage = message;
+      if (context) {
+        const contextPrompt = this.buildAgentPrompt(context);
+        enhancedMessage = `${contextPrompt}\n\nUser Message: ${message}`;
+        console.log(`[OpenClaw CLI] Added agent context (${contextPrompt.length} chars)`);
+      }
+      
       let command = 
         `openclaw agent ` +
-        `--message "${this.escapeShell(message)}" ` +
+        `--message "${this.escapeShell(enhancedMessage)}" ` +
         `--agent "${this.escapeShell(agentName)}" ` +
         `--session-id "${this.escapeShell(sessionId)}"`;
       
@@ -73,18 +84,46 @@ class OpenClawServiceClass {
       }
       
       console.log(`[OpenClaw CLI] Executing: ${command}`);
+      const startTime = Date.now();
       
-      // Execute command
+      // Execute command with extended timeout
+      // OpenClaw needs time for: plugin loading + agent init + LLM call + response processing
       const { stdout, stderr } = await execAsync(command, {
-        timeout: 30000, // 30s timeout
+        timeout: 120000, // 120s timeout (was 30s - too short for LLM calls)
         maxBuffer: 10 * 1024 * 1024, // 10MB buffer
       });
+      
+      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+      const durationNum = parseFloat(duration);
+      
+      // Log performance warning for slow responses
+      if (durationNum > 30) {
+        console.warn(`[OpenClaw CLI] ⚠️ Slow response: ${duration}s (plugins init + LLM call)`);
+      } else {
+        console.log(`[OpenClaw CLI] Completed in ${duration}s`);
+      }
       
       if (stderr) {
         console.error('[OpenClaw CLI] stderr:', stderr);
       }
       
-      const responseText = stdout.trim();
+      let responseText = stdout.trim();
+      
+      // Filter out plugin loading noise and ANSI codes
+      responseText = responseText
+        .split('\n')
+        .filter(line => {
+          // Skip plugin loading messages, ANSI codes, and log lines
+          if (line.includes('[plugins]')) return false;
+          if (line.includes('memory-lancedb')) return false;
+          if (line.includes('lossless-claw')) return false;
+          if (line.includes('feishu_')) return false;
+          if (line.trim().startsWith('[')) return false;
+          if (line.includes('\u001b[')) return false; // ANSI escape codes
+          return line.trim().length > 0;
+        })
+        .join('\n')
+        .trim();
       
       if (!responseText) {
         console.warn('[OpenClaw CLI] Empty response from Gateway');
@@ -104,7 +143,9 @@ class OpenClawServiceClass {
       
       // Handle timeout
       if (error.code === 'ETIMEDOUT' || error.killed === true) {
-        throw new Error('OpenClaw CLI timeout (>30s)');
+        const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.error(`[OpenClaw CLI] ❌ Timeout after ${duration}s (limit: 120s)`);
+        throw new Error(`OpenClaw CLI timeout (>120s, took ${duration}s) - LLM call may still be processing`);
       }
       
       // Handle command not found
@@ -112,6 +153,7 @@ class OpenClawServiceClass {
         throw new Error('OpenClaw CLI not found. Please install OpenClaw: npm install -g openclaw');
       }
       
+      // Fail fast - rethrow with context
       throw new Error(`OpenClaw CLI failed: ${error.message}`);
     }
   }
@@ -128,7 +170,7 @@ class OpenClawServiceClass {
    * Build agent context prompt (for future use with --context flag)
    */
   private buildAgentPrompt(context: AgentContext): string {
-    const { agentName, agentRole, personality, relationships, roomContext, currentTopic } = context;
+    const { agentName, agentRole, personality, relationships, roomContext, currentTopic, recentHistory } = context;
 
     let prompt = `You are ${agentName}, ${agentRole}.\n\n`;
     
@@ -157,13 +199,30 @@ class OpenClawServiceClass {
       prompt += `Current discussion topic: ${currentTopic}\n\n`;
     }
 
+    // Recent conversation history (CRITICAL for context-aware responses)
+    if (recentHistory && recentHistory.length > 0) {
+      prompt += `Recent Conversation History:\n`;
+      recentHistory.forEach(msg => {
+        prompt += `  ${msg}\n`;
+      });
+      prompt += '\n';
+    }
+
+    // @Mention support
+    prompt += `@Mention Feature:\n`;
+    prompt += `- You can @mention family members to address them directly (e.g., "@Mom", "@Bro")\n`;
+    prompt += `- When someone @mentions you, respond directly to them\n`;
+    prompt += `- Use @mentions to include specific family members in conversations\n\n`;
+
     // Response guidelines
     prompt += `Guidelines:\n`;
     prompt += `- Respond naturally as ${agentName}\n`;
     prompt += `- Keep responses conversational (1-3 sentences)\n`;
     prompt += `- Show your personality traits\n`;
     prompt += `- Reference relationships when relevant\n`;
+    prompt += `- Use conversation history to understand context\n`;
     prompt += `- Stay on topic but allow natural conversation flow\n`;
+    prompt += `- Reference previous messages when relevant\n`;
 
     return prompt;
   }

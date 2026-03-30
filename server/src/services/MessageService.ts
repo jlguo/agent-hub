@@ -1,6 +1,48 @@
 import { prisma } from '../lib/prisma.js';
 import { getIO } from '../lib/socket.js';
 import { OpenClawService, AgentContext } from './OpenClawService.js';
+import { Agent } from '@prisma/client';
+
+/**
+ * Parse @mentions from message and return mentioned agent IDs
+ */
+function parseMentions(message: string): string[] {
+  const mentionRegex = /@(\w+)/g;
+  const matches = [...message.matchAll(mentionRegex)];
+  return matches.map(match => match[1].toLowerCase());
+}
+
+/**
+ * Select agent with @mention targeting
+ * - If @mentioned, target agent has 100% selection priority
+ * - Otherwise, random selection (MVP)
+ */
+function selectAgentWithMention(message: string, agents: Agent[]): Agent {
+  const mentions = parseMentions(message);
+  
+  if (mentions.length > 0) {
+    // Find agents that match @mentions
+    const mentionedAgents = agents.filter(agent => {
+      const agentNameLower = agent.name.toLowerCase();
+      const agentIdLower = agent.id.toLowerCase();
+      return mentions.some(mention => 
+        agentNameLower.includes(mention) || 
+        agentIdLower.includes(mention) ||
+        agent.role?.toLowerCase().includes(mention)
+      );
+    });
+    
+    if (mentionedAgents.length > 0) {
+      // If multiple mentions, pick the first one (or could randomize)
+      const selected = mentionedAgents[0];
+      return { ...selected, selectedByMention: true } as Agent & { selectedByMention: boolean };
+    }
+  }
+  
+  // No mentions or no match - random selection
+  const selected = agents[Math.floor(Math.random() * agents.length)];
+  return { ...selected, selectedByMention: false } as Agent & { selectedByMention: boolean };
+}
 
 /**
  * Trigger AI response from an agent in the room
@@ -41,15 +83,37 @@ export async function triggerAgentResponse(
       return;
     }
     
-    // 2. Select responding agent (MVP: random selection)
-    const respondingAgent = agents[Math.floor(Math.random() * agents.length)];
-    console.log(`[MessageService] Selected agent: ${respondingAgent.name}`);
+    // 2. Select responding agent with @mention targeting
+    const respondingAgent = selectAgentWithMention(userMessage, agents);
+    console.log(`[MessageService] Selected agent: ${respondingAgent.name}`, {
+      reason: respondingAgent.selectedByMention ? '@mention' : 'normal selection',
+    });
     
-    // 3. Build agent context
+    // 3. Build agent context with recent conversation history
     const allRelationships = [
       ...(respondingAgent.relationshipsAsA || []),
       ...(respondingAgent.relationshipsAsB || []),
     ];
+    
+    // Load recent messages from the same discussion (last 20 messages)
+    const recentMessages = await prisma.message.findMany({
+      where: { roomId },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      include: {
+        agent: {
+          select: { name: true, avatar: true },
+        },
+      },
+    });
+    
+    // Format messages for agent context (newest first, then reverse for chronological)
+    const formattedHistory = recentMessages.reverse().map(msg => {
+      const sender = msg.senderType === 'human' 
+        ? 'User' 
+        : (msg.agent?.name || 'Agent');
+      return `${sender}: ${msg.content}`;
+    });
     
     const agentContext: AgentContext = {
       agentName: respondingAgent.name,
@@ -70,7 +134,7 @@ export async function triggerAgentResponse(
         };
       }),
       roomContext: roomContext || 'Family conversation',
-      recentHistory: [], // TODO: Load recent messages from DB
+      recentHistory: formattedHistory,
       currentTopic: undefined, // TODO: Track current topic
     };
     
@@ -93,7 +157,7 @@ export async function triggerAgentResponse(
       data: {
         roomId,
         agentId: respondingAgent.id,
-        role: 'assistant',
+        senderType: 'agent',
         content: response.content,
       },
       include: {

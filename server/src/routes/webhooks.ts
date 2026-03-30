@@ -72,7 +72,7 @@ router.post('/openclaw', verifyWebhookToken, async (req: Request, res: Response)
       data: {
         roomId: room.id,
         content: payload.message.content,
-        role: 'user',
+        senderType: 'human',
         metadata: JSON.stringify({
           channelId: payload.channel,
           accountId: payload.accountId,

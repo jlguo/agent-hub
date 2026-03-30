@@ -68,7 +68,7 @@ export function setupWebSocket(io: Server): void {
           data: {
             roomId,
             agentId: agentId || null,
-            role: agentId ? 'assistant' : 'user',
+            senderType: agentId ? 'agent' : 'human',
             content
           },
           include: {

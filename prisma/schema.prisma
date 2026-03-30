@@ -20,13 +20,14 @@ model Room {
   updatedAt   DateTime @updatedAt
   
   // External chat platform mapping (e.g., Feishu group ID)
-  externalChatId String? @unique
+  externalChatId String?
   
   agents      Agent[]
   messages    Message[]
   discussions Discussion[]
+  sessions    Session[]
   
-  // OpenClaw session tracking
+  // OpenClaw session tracking (legacy - use Session model)
   openclawSessionId String?
   sessionMaxAge     Int      @default(86400) // 24 hours in seconds
   sessionCreatedAt  DateTime?
@@ -86,40 +87,63 @@ model Relationship {
 
 // Message - conversation history
 model Message {
-  id        String   @id @default(uuid())
-  roomId    String
-  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  id           String   @id @default(uuid())
+  roomId       String
+  room         Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
   
-  agentId   String?  // null if from admin user
-  agent     Agent?   @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  agentId      String?  // null if from human
+  agent        Agent?   @relation(fields: [agentId], references: [id], onDelete: SetNull)
   
-  role      String   // "user" or "assistant"
-  content   String
+  discussionId String?  // Link to discussion (NEW)
+  discussion   Discussion? @relation(fields: [discussionId], references: [id], onDelete: SetNull)
+  
+  senderType   String   // "human" or "agent" (replaces role)
+  content      String
   
   // Metadata
-  metadata  String?  // JSON string for additional data
+  metadata     String?  // JSON string for additional data
   
-  createdAt DateTime @default(now())
+  createdAt    DateTime @default(now())
   
   @@index([roomId, createdAt])
+  @@index([discussionId, createdAt]) // NEW: For discussion messages
+  @@index([agentId, createdAt])      // NEW: For agent messages
+}
+
+// Session - tracks OpenClaw gateway sessions
+model Session {
+  id         String   @id @default(uuid())
+  roomId     String
+  room       Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  
+  sessionId  String   @unique // OpenClaw session ID
+  status     String   @default("active") // active, expired, terminated
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime?
+  lastUsedAt DateTime @updatedAt
+  
+  @@index([roomId, status])
 }
 
 // Discussion - tracks active topic discussions
 model Discussion {
-  id        String   @id @default(uuid())
-  roomId    String
-  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  id         String    @id @default(uuid())
+  roomId     String
+  room       Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
   
-  topic     String
-  heatScore Int      @default(50) // 0-100
-  status    String   @default("active") // active, cooling, ended
+  topic      String
+  heatScore  Int       @default(0) // Calculated field (0-100)
+  status     String    @default("active") // active, cooling, archived
   
   // Participants (stored as JSON array of agent IDs)
   participants String? // JSON array: ["agent1", "agent2"]
   
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  endedAt   DateTime?
+  messages   Message[] // Messages in this discussion
+  
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archivedAt DateTime? // Renamed from endedAt
   
   @@index([roomId, status])
+  @@index([roomId, createdAt]) // For recent discussions
 }
