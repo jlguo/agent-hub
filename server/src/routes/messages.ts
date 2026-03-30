@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../index.js';
 import { triggerAgentResponse } from '../services/MessageService.js';
+import { triggerAgentDiscussion } from '../services/DiscussionService.js';
 import { getIO } from '../lib/socket.js';
 
 export const router = Router();
@@ -76,10 +77,23 @@ router.post('/rooms/:roomId', async (req: Request, res: Response) => {
       agentName: message.agent?.name || undefined,
     });
 
-    // If human message, trigger agent response (async, non-blocking)
+    // If human message, check for discussion trigger or normal agent response
     if (senderType === 'human') {
-      triggerAgentResponse(roomId, content, room.description || undefined)
-        .catch(console.error);
+      // Check if this is a discussion trigger
+      const discussionTopic = content.match(/^\/discuss\s+(.+)/i)?.[1]?.trim() ||
+                             content.match(/^let's discuss\s+(.+)/i)?.[1]?.trim() ||
+                             content.match(/^咱们讨论一下\s*(.+)/i)?.[1]?.trim();
+      
+      if (discussionTopic) {
+        // Trigger autonomous agent discussion
+        console.log(`[MessagesRoute] Discussion triggered: "${discussionTopic}"`);
+        triggerAgentDiscussion(roomId, discussionTopic)
+          .catch(console.error);
+      } else {
+        // Normal agent response
+        triggerAgentResponse(roomId, content, room.description || undefined)
+          .catch(console.error);
+      }
     }
 
     res.status(201).json(message);
