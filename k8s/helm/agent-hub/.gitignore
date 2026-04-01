@@ -1,0 +1,17 @@
+# Secrets files (DO NOT COMMIT)
+secrets.local.yaml
+*.local.yaml
+!values-dev.yaml
+!values-staging.yaml
+!values-production.yaml
+
+# Temporary files
+*.tmp
+*.bak
+
+# IDE
+.vscode/
+.idea/
+
+# Node modules (should already be in root .gitignore)
+node_modules/

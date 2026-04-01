@@ -1,0 +1,180 @@
+# Default values for agent-hub
+# This is a YAML-formatted file.
+
+# Replica count
+replicaCount: 1
+
+# Image configuration
+image:
+  backend:
+    repository: agent-hub-backend
+    pullPolicy: IfNotPresent
+    tag: "dev"
+  frontend:
+    repository: agent-hub-frontend
+    pullPolicy: IfNotPresent
+    tag: "dev"
+
+# Image pull secrets
+imagePullSecrets: []
+
+# Name overrides
+nameOverride: ""
+fullnameOverride: ""
+
+# Service account configuration
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod annotations and labels
+podAnnotations: {}
+podLabels: {}
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+# Security contexts
+backend:
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+      - ALL
+  service:
+    type: ClusterIP
+    port: 4000
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  volumeMounts: []
+  extraArgs: []
+
+frontend:
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+      - ALL
+  service:
+    type: ClusterIP
+    port: 3000
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  volumeMounts: []
+  extraArgs: []
+
+# Volumes
+volumes:
+- name: prisma-storage
+  persistentVolumeClaim:
+    claimName: agent-hub-db-pvc
+- name: logs-storage
+  emptyDir: {}
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+  - host: agent-hub.local
+    paths:
+    - path: /
+      pathType: Prefix
+      backend: frontend
+    - path: /socket.io/
+      pathType: Prefix
+      backend: backend
+  - host: api.agent-hub.local
+    paths:
+    - path: /
+      pathType: Prefix
+      backend: backend
+  tls:
+  - secretName: agent-hub-tls
+    hosts:
+    - agent-hub.local
+    - api.agent-hub.local
+
+# Persistent volume claim
+persistence:
+  enabled: true
+  storageClass: ""
+  accessModes:
+  - ReadWriteOnce
+  size: 10Gi
+  annotations: {}
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Network policy
+networkPolicy:
+  enabled: true
+
+# Monitoring configuration
+monitoring:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s
+  prometheusRules:
+    enabled: false
+
+# ConfigMap values
+config:
+  NODE_ENV: "development"
+  PORT: "4000"
+  FRONTEND_URL: "http://localhost:3000"
+  BACKEND_URL: "http://localhost:4000"
+  DATABASE_URL: "file:/app/prisma/prod.db"
+  WS_HEARTBEAT_INTERVAL: "30000"
+  WS_MAX_CONNECTIONS: "1000"
+  RATE_LIMIT_WINDOW_MS: "60000"
+  RATE_LIMIT_MAX_REQUESTS: "100"
+  SENTRY_ENVIRONMENT: "development"
+  LOG_LEVEL: "debug"
+
+# Secrets (should be overridden per environment)
+secrets:
+  FEISHU_APP_ID: ""
+  FEISHU_APP_SECRET: ""
+  FEISHU_CHAT_ID: ""
+  FEISHU_VERIFY_TOKEN: ""
+  OPENCLAW_VERIFICATION_TOKEN: ""
+  JWT_SECRET: ""
+  ENCRYPTION_KEY: ""
+  API_KEY: ""
+  SENTRY_DSN: ""

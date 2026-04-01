@@ -1,0 +1,91 @@
+# Development overrides for local Kubernetes (Docker Desktop)
+
+replicaCount: 1
+
+image:
+  backend:
+    repository: agent-hub-backend
+    pullPolicy: IfNotPresent  # Use local images
+    tag: "dev"
+  frontend:
+    repository: agent-hub-frontend
+    pullPolicy: IfNotPresent
+    tag: "dev"
+
+# Enable hostPath volumes for hot reload
+backend:
+  volumeMounts:
+  - name: source-code
+    mountPath: /app/server
+  extraArgs: ["npm", "run", "dev"]  # tsx watch for hot reload
+
+frontend:
+  volumeMounts:
+  - name: source-code
+    mountPath: /app/client
+  extraArgs: ["npm", "run", "dev"]  # Next.js dev server
+
+# Add hostPath volume for source code
+volumes:
+- name: prisma-storage
+  persistentVolumeClaim:
+    claimName: agent-hub-db-pvc
+- name: logs-storage
+  emptyDir: {}
+- name: source-code
+  hostPath:
+    path: /home/jlguo/agent-hub
+    type: Directory
+
+# Disable ingress for local dev (use port-forward)
+ingress:
+  enabled: false
+
+# Disable autoscaling for dev
+autoscaling:
+  enabled: false
+
+# Enable network policy
+networkPolicy:
+  enabled: true
+
+# Enable basic monitoring
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    scrapeTimeout: 10s
+  prometheusRules:
+    enabled: false  # Disable alerts for dev
+
+# Development config
+config:
+  NODE_ENV: "development"
+  PORT: "4000"
+  FRONTEND_URL: "http://localhost:3000"
+  BACKEND_URL: "http://localhost:4000"
+  DATABASE_URL: "file:/app/prisma/prod.db"
+  LOG_LEVEL: "debug"  # Verbose logging for dev
+
+# Resources (lower for local dev)
+backend:
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+frontend:
+  resources:
+    requests:
+      cpu: "25m"
+      memory: "64Mi"
+    limits:
+      cpu: "100m"
+      memory: "128Mi"
+
+# Secrets should be in secrets.local.yaml (not committed)
+# Include with: --values secrets.local.yaml
