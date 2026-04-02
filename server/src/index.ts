@@ -9,6 +9,7 @@ import { router as roomsRouter } from './routes/rooms.js';
 import { router as agentsRouter } from './routes/agents.js';
 import { router as messagesRouter } from './routes/messages.js';
 import webhookRouter from './routes/webhooks.js';
+import openclawGatewayRouter from './routes/openclaw-gateway.js';
 import { initializeIO } from './lib/socket.js';
 import { feishuOfficial } from './services/FeishuOfficialService.js';
 import { handleFeishuMessage } from './services/MessageService.js';
@@ -50,6 +51,7 @@ app.use('/api/rooms', roomsRouter);
 app.use('/api/agents', agentsRouter);
 app.use('/api/messages', messagesRouter);
 app.use('/api/webhooks', webhookRouter);
+app.use('/api/openclaw', openclawGatewayRouter);
 
 // Error handling middleware
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

@@ -166,15 +166,26 @@ config:
   RATE_LIMIT_MAX_REQUESTS: "100"
   SENTRY_ENVIRONMENT: "development"
   LOG_LEVEL: "debug"
+  
+  # OpenClaw dual-mode configuration
+  OPENCLAW_MODE: "cli"  # "cli" or "http"
+  OPENCLAW_GATEWAY_URL: "http://localhost:4000"
 
 # Secrets (should be overridden per environment)
 secrets:
+  # Feishu
   FEISHU_APP_ID: ""
   FEISHU_APP_SECRET: ""
   FEISHU_CHAT_ID: ""
   FEISHU_VERIFY_TOKEN: ""
+  
+  # OpenClaw (required for HTTP mode, optional for CLI mode)
   OPENCLAW_VERIFICATION_TOKEN: ""
+  
+  # Security
   JWT_SECRET: ""
   ENCRYPTION_KEY: ""
   API_KEY: ""
+  
+  # Monitoring
   SENTRY_DSN: ""
