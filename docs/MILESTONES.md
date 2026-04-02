@@ -12,8 +12,8 @@ This document consolidates all planning, phases, and milestones into a single so
 
 ### What Changed
 
-- ✅ **Phase 1 & 2**: Complete (archived)
-- ✅ **Phase 3**: Split into Milestone 3A (Polish) + Milestone 3B (Production Readiness)
+- ✅ **Milestone 1 & 2**: Complete (archived)
+- 🆕 **Milestone 3**: Production Readiness (consolidated, 2 phases)
 - 🆕 **Milestone 4**: Test Quality Remediation (NEW - P0 Priority)
 - 🆕 **Future Milestones**: 5+ (planned)
 
@@ -84,13 +84,11 @@ Daily Execution
     |                   |  (Agent AI)       |                   |
     |                   |  ✅ COMPLETE      |                   |
     |                   |                   |                   |
-    |                   |                   ├─ Milestone 3A     |
-    |                   |                   |  (Polish)         |
-    |                   |                   |  🔄 IN PROGRESS   |
-    |                   |                   |                   |
-    |                   |                   ├─ Milestone 3B     |
+    |                   |                   ├─ Milestone 3      |
     |                   |                   |  (Production)     |
-    |                   |                   |  ⏳ PLANNED       |
+    |                   |                   |  Phase 1: Polish  |
+    |                   |                   |  Phase 2: Deploy  |
+    |                   |                   |  🔄 IN PROGRESS   |
     |                   |                   |                   |
     |                   |                   ├─ Milestone 4      |
     |                   |                   |  (Test Quality)   |
@@ -186,20 +184,33 @@ Daily Execution
 
 ---
 
-### 🔄 Milestone 3A: Polish & Cleanup
+### 🔄 Milestone 3: Production Readiness
+
+**Status**: IN PROGRESS (Phase 1: 80% complete)  
+**Timeline**: 2026-03-30 to 2026-04-22 (4 weeks total)  
+**Priority**: P0 (Critical for deployment)
+
+**Structure**:
+- **Phase 1**: Polish & Cleanup (P1, 1 week)
+- **Phase 2**: Production Deployment (P0, 2 weeks, BLOCKED by Milestone 4)
+- **Phase 3**: Monitoring & Security (P0, 1 week)
+
+---
+
+#### Phase 1: Polish & Cleanup
 
 **Status**: IN PROGRESS (80% complete)  
 **Timeline**: 2026-03-30 to 2026-04-05 (7 days)  
 **Priority**: P1 (Quality of life)
 
-#### Goals
+**Goals**
 - [x] Codebase cleanup
 - [x] Documentation consolidation
 - [x] Bug fixes from troubleshooting guide
 - [ ] Performance optimization
 - [ ] Error handling improvements
 
-#### Tasks
+**Tasks**
 
 **Complete ✅**
 - ✅ Comprehensive troubleshooting guide (15 issues)
@@ -220,7 +231,7 @@ Daily Execution
 - ⏳ WebSocket reconnection edge cases
 - ⏳ Database query optimization
 
-#### Definition of Done
+**Definition of Done**
 - [ ] All known bugs fixed
 - [ ] Performance baseline established
 - [ ] Error handling consistent across all services
@@ -230,23 +241,54 @@ Daily Execution
 
 ---
 
-### 🔴 Milestone 3B: Production Readiness (P0)
+#### Phase 2: Production Deployment
 
 **Status**: PLANNED (blocked by Milestone 4)  
-**Timeline**: 2026-04-08 to 2026-04-22 (2 weeks)  
+**Timeline**: 2026-04-16 to 2026-04-22 (1 week)  
 **Priority**: P0 (Critical for deployment)
 
 **BLOCKER**: Must complete Milestone 4 (Test Quality) first
 
-#### Goals
+**Goals**
+- [ ] CI/CD pipeline
+- [ ] Docker containerization
+- [ ] Production deployment
+- [ ] Backup strategy
+
+**Tasks**
+- [ ] GitHub Actions workflow
+- [ ] Playwright E2E in CI
+- [ ] Automated database migrations
+- [ ] Docker containerization
+- [ ] Docker Compose or K8s manifests
+- [ ] Staging environment
+- [ ] Production deployment with manual approval
+- [ ] Backup strategy (daily DB backups)
+
+**Definition of Done**
+- [ ] CI/CD pipeline passing
+- [ ] Staging environment deployed
+- [ ] Production deployment successful
+- [ ] Backup/recovery tested
+
+**Dependencies**: 
+- ❌ BLOCKED: Milestone 4 (Test Quality) must complete first
+- ⏳ Start Date: 2026-04-16 (after Milestone 4)
+
+---
+
+#### Phase 3: Monitoring & Security
+
+**Status**: PLANNED  
+**Timeline**: 2026-04-22 to 2026-04-30 (1 week)  
+**Priority**: P0 (Critical for production)
+
+**Goals**
 - [ ] Monitoring & alerting
 - [ ] Rate limiting & security
-- [ ] CI/CD pipeline
-- [ ] Production deployment
+- [ ] Production hardening
 
-#### Tasks
-
-**Week 1: Monitoring + Security**
+**Tasks**
 - [ ] Winston structured logging
 - [ ] Prometheus metrics dashboard
 - [ ] Health endpoints (/health, /health/detailed, /metrics)
@@ -257,28 +299,11 @@ Daily Execution
 - [ ] JWT auth for admin routes
 - [ ] AES-256-GCM encryption for sensitive data
 
-**Week 2: CI/CD + Deployment**
-- [ ] GitHub Actions workflow
-- [ ] Playwright E2E in CI
-- [ ] Automated database migrations
-- [ ] Docker containerization
-- [ ] Kubernetes manifests (or Docker Compose)
-- [ ] Staging environment
-- [ ] Production deployment with manual approval
-- [ ] Backup strategy (daily DB backups)
-
-#### Definition of Done
+**Definition of Done**
 - [ ] Monitoring dashboard live
 - [ ] Alerts configured and tested
-- [ ] CI/CD pipeline passing
-- [ ] Staging environment deployed
-- [ ] Production deployment successful
-- [ ] Backup/recovery tested
-
-**Dependencies**: 
-- ❌ BLOCKED: Milestone 4 (Test Quality) must complete first
-- ⏳ Start Date: 2026-04-08 (after Milestone 4)
-- ⏳ End Date: 2026-04-22
+- [ ] Rate limiting active
+- [ ] Security hardening complete
 
 ---
 
