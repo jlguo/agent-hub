@@ -127,3 +127,6 @@ process.on('SIGTERM', async () => {
     process.exit(0);
   });
 });
+
+// Export for testing
+export { app, httpServer };
