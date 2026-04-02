@@ -322,11 +322,13 @@ Daily Execution
 
 ### 🔴 Milestone 4: Test Quality Remediation (Must-Have BLOCKER)
 
-**Status**: NOT STARTED  
+**Status**: READY TO START (Phase 1 Tech Design Complete)  
 **Timeline**: 2026-04-02 to 2026-04-16 (2 weeks)  
 **Priority**: **Must-Have - BLOCKS ALL OTHER WORK**
 
-**See**: [`docs/TEST-QUALITY-REVIEW-2026-04-02.md`](TEST-QUALITY-REVIEW-2026-04-02.md) for full analysis
+**Related Documents**:
+- [`docs/M4-PHASE1-TECHNICAL-DESIGN.md`](M4-PHASE1-TECHNICAL-DESIGN.md) - Phase 1 Infrastructure technical design
+- [`docs/TEST-QUALITY-REVIEW-2026-04-02.md`](TEST-QUALITY-REVIEW-2026-04-02.md) - Test quality analysis and remediation plan
 
 #### Goals
 - [ ] Test infrastructure setup
