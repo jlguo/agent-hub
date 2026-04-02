@@ -210,7 +210,7 @@ cat ~/.openclaw/openclaw.json | grep -A 5 "gateway"
   # Or use UUID
   uuidgen
   ```
-- **Example**: `sk_live_abc123def456ghi789jkl012mno345pqr678`
+// Example removed to comply with GitHub push protection
 - **Required**: ⚠️ Optional (only if exposing API externally)
 - **Security**: 🔒🔒 High (API access control)
 
