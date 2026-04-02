@@ -14,18 +14,17 @@ import { initializeIO } from './lib/socket.js';
 import { feishuOfficial } from './services/FeishuOfficialService.js';
 import { handleFeishuMessage } from './services/MessageService.js';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
 // Load environment variables with Jest compatibility
-const getDirname = () => {
-  try {
-    return path.dirname(fileURLToPath(import.meta.url));
-  } catch {
-    return process.cwd();
-  }
+// Jest runs in CommonJS context, production uses ES modules
+const initEnv = () => {
+  // In Jest, process.cwd() points to project root
+  // In production (ESM), we need import.meta.url
+  const envPath = path.resolve(process.cwd(), '.env');
+  config({ path: envPath });
 };
-const __dirname = getDirname();
-config({ path: path.resolve(__dirname, '../../.env') });
+
+initEnv();
 
 // Initialize Prisma
 export const prisma = new PrismaClient({
