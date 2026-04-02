@@ -79,6 +79,9 @@ export const errors = {
   
   websocket: (message: string, context?: Record<string, any>) =>
     new AppError(message, ErrorType.WEBSOCKET, 500, context),
+  
+  unknown: (message: string, context?: Record<string, any>) =>
+    new AppError(message, ErrorType.UNKNOWN, 500, context),
 };
 
 /**
@@ -115,12 +118,6 @@ export async function safeExecute<T>(
     throw appError;
   }
 }
-
-/**
- * Unknown error (fallback)
- */
-errors.unknown = (message: string, context?: Record<string, any>) =>
-  new AppError(message, ErrorType.UNKNOWN, 500, context);
 
 /**
  * Format error for API response
