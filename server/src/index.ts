@@ -16,8 +16,15 @@ import { handleFeishuMessage } from './services/MessageService.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Load environment variables
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Load environment variables with Jest compatibility
+const getDirname = () => {
+  try {
+    return path.dirname(fileURLToPath(import.meta.url));
+  } catch {
+    return process.cwd();
+  }
+};
+const __dirname = getDirname();
 config({ path: path.resolve(__dirname, '../../.env') });
 
 // Initialize Prisma

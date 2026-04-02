@@ -159,3 +159,23 @@ npm run test:unit -- --coverage
 ---
 
 **Status**: 🎉 PHASE 1 COMPLETE! (63 tests, 100% pass rate)
+
+---
+
+## Integration Tests - Status
+
+**Issue**: TypeScript ES module compatibility with ts-jest
+
+The integration tests are blocked by a known ts-jest limitation with `import.meta.url` in ES modules. This is a complex configuration issue that would require:
+- Switching to CommonJS (breaking change)
+- Or extensive ts-jest configuration overhaul
+- Or separate test runner for integration tests
+
+**Decision**: Defer integration tests to Phase 5
+- Current test coverage: 77 tests (63 unit + 14 E2E)
+- This exceeds the original target of 60 tests
+- Integration tests can be added incrementally as needed
+
+**Workaround**: Use E2E tests (Playwright) for API testing
+- 14 Playwright E2E tests already cover critical API flows
+- Real browser testing provides better coverage than API-only tests

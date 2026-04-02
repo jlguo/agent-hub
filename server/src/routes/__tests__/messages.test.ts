@@ -4,10 +4,7 @@
  */
 
 import request from 'supertest';
-import { PrismaClient } from '@prisma/client';
-import { app } from '../../index';
-
-const prisma = new PrismaClient();
+import { app, prisma } from '../../test/test-app';
 
 // Test data
 let testRoomId: string;

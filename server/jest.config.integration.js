@@ -29,10 +29,13 @@ export default {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       tsconfig: 'server/tsconfig.json',
+      useESM: true,
     }],
   },
   // Run tests in sequence to avoid database conflicts
   maxWorkers: 1,
   // Longer timeout for integration tests
   testTimeout: 30000,
+  // ES module support
+  extensionsToTreatAsEsm: ['.ts'],
 };
