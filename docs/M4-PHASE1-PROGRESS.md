@@ -1,9 +1,9 @@
 # Milestone 4 Phase 1: Progress Report
 
 **Date**: 2026-04-02  
-**Status**: IN PROGRESS (40% complete)  
-**Time Spent**: 2 hours  
-**Time Remaining**: 7 hours
+**Status**: IN PROGRESS (55% complete)  
+**Time Spent**: 3 hours  
+**Time Remaining**: 4 hours
 
 ---
 
@@ -49,11 +49,20 @@ Created 4 test factories:
   - formatErrorResponse (2 tests)
   - logError (1 test)
 
+### 7. MessageService Tests ✅
+- **File**: `server/src/services/__tests__/MessageService.test.ts`
+- **Tests**: 17 test cases, ALL PASSING ✅
+- **Coverage**:
+  - parseMentions utility (7 tests)
+  - Message creation (3 tests)
+  - Message retrieval (4 tests)
+  - Agent matching (3 tests)
+
 ---
 
 ## Remaining Tasks ⏳
 
-### 7. Package Scripts (30 min)
+### 8. Package Scripts (30 min)
 Update `package.json` with test commands:
 ```json
 {
@@ -68,20 +77,18 @@ Update `package.json` with test commands:
 }
 ```
 
-### 8. More Unit Tests (2 hours)
-Target: 40+ total unit tests
-- [ ] MessageService tests (15 tests)
+### 9. More Unit Tests (1 hour)
+Target: 10+ more unit tests
 - [ ] HeatTracker tests (10 tests)
 - [ ] AgentSelector tests (10 tests)
-- [ ] Other utilities (5 tests)
 
-### 9. Integration Tests (2 hours)
+### 10. Integration Tests (2 hours)
 Target: 20+ integration tests
 - [ ] Messages API endpoints (10 tests)
 - [ ] Rooms API endpoints (6 tests)
 - [ ] Webhooks API (4 tests)
 
-### 10. Documentation (1 hour)
+### 11. Documentation (1 hour)
 - [ ] Update `tests/README.md`
 - [ ] Add examples to docs
 - [ ] Document debugging tips
@@ -93,14 +100,14 @@ Target: 20+ integration tests
 ### Current Coverage
 | Category | Target | Current | Status |
 |----------|--------|---------|--------|
-| Unit Tests | 40+ | 16 | 40% |
+| Unit Tests | 40+ | 33 | 82% |
 | Integration Tests | 20+ | 0 | 0% |
-| Total Tests | 60+ | 16 | 27% |
-| Code Coverage | 40% | ~5% | 12% |
+| Total Tests | 60+ | 33 | 55% |
+| Code Coverage | 40% | ~8% | 20% |
 
 ### Test Execution
-- **Run Time**: ~3.5 seconds
-- **Pass Rate**: 100% (16/16)
+- **Run Time**: ~1.8 seconds
+- **Pass Rate**: 100% (33/33)
 - **Flaky Tests**: 0
 
 ---
@@ -138,4 +145,4 @@ npm run test:unit -- --coverage
 
 ---
 
-**Status**: ✅ On Track (40% complete, ahead of schedule)
+**Status**: ✅ Ahead of Schedule (55% complete, 33/60 tests)
