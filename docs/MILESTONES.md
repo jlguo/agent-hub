@@ -150,6 +150,9 @@ Daily Execution
 **Timeline**: 2026-03-27 to 2026-03-30 (4 days)  
 **Priority**: Must-Have (Core value proposition)
 
+**Related Documents**:
+- [`docs/FEATURES.md`](FEATURES.md) - Complete feature specifications (heat system, @mentions, discussions, etc.)
+
 #### Goals
 - [x] Heat-based response system
 - [x] Intelligent agent selection
@@ -189,6 +192,10 @@ Daily Execution
 **Status**: IN PROGRESS (Phase 1: 80% complete)  
 **Timeline**: 2026-03-30 to 2026-04-22 (4 weeks total)  
 **Priority**: Must-Have (Critical for deployment)
+
+**Related Documents**:
+- [`docs/P0-PRODUCTION-DESIGN.md`](P0-PRODUCTION-DESIGN.md) - Full technical design for Phase 2 & 3 (K8s, monitoring, CI/CD)
+- [`docs/P1-TECHNICAL-DESIGN.md`](P1-TECHNICAL-DESIGN.md) - UX features technical design (typing indicators, read receipts, admin dashboard)
 
 **Structure**:
 - **Phase 1**: Polish & Cleanup (Should-Have, 1 week)
@@ -703,12 +710,26 @@ At the end of each month:
 
 ## Related Documents
 
-### Current (Active)
-- [`docs/TEST-QUALITY-REVIEW-2026-04-02.md`](TEST-QUALITY-REVIEW-2026-04-02.md) - Test quality analysis and remediation plan
+### Planning & Roadmap
+- **This document** ([MILESTONES.md](MILESTONES.md)) - **SINGLE SOURCE OF TRUTH** for all planning
+
+### Technical Design (Linked from Milestones)
+- [`docs/FEATURES.md`](FEATURES.md) - Feature specifications (linked from Milestone 2)
+- [`docs/P0-PRODUCTION-DESIGN.md`](P0-PRODUCTION-DESIGN.md) - Production deployment design (linked from Milestone 3)
+- [`docs/P1-TECHNICAL-DESIGN.md`](P1-TECHNICAL-DESIGN.md) - UX features design (linked from Milestone 3)
+
+### Implementation Guides
+- [`docs/TEST-QUALITY-REVIEW-2026-04-02.md`](TEST-QUALITY-REVIEW-2026-04-02.md) - Test quality analysis and remediation plan (linked from Milestone 4)
 - [`skills/test-writing-rules/SKILL.md`](../skills/test-writing-rules/SKILL.md) - Test writing skill (enforceable rules)
+- [`docs/LOCAL-K8S-DEV-SETUP.md`](LOCAL-K8S-DEV-SETUP.md) - Local Kubernetes development setup
+- [`docs/SECRETS-CONFIGURATION.md`](SECRETS-CONFIGURATION.md) - Secrets and credentials guide
+- [`docs/SECRETS-REQUIRED-FIELDS.md`](SECRETS-REQUIRED-FIELDS.md) - Required vs optional fields
+- [`docs/WHY-THESE-TOKENS-REQUIRED.md`](WHY-THESE-TOKENS-REQUIRED.md) - Token requirements explanation
+- [`docs/OPENCLAW-DUAL-MODE-DESIGN.md`](OPENCLAW-DUAL-MODE-DESIGN.md) - OpenClaw dual-mode design
+
+### System Documentation
 - [`STATUS.md`](../STATUS.md) - Current system status
 - [`ARCHITECTURE.md`](../ARCHITECTURE.md) - System architecture
-- [`docs/FEATURES.md`](FEATURES.md) - Feature specifications
 
 ### Historical (Archived)
 - [`docs/ARCHIVE/PLANNING/PHASES.md`](ARCHIVE/PLANNING/PHASES.md) - Original phase documentation (superseded by MILESTONES.md)
