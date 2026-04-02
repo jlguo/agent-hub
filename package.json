@@ -19,7 +19,7 @@
     "test:unit": "jest --config=server/jest.config.js",
     "test:watch": "jest --config=server/jest.config.js --watch",
     "test:coverage": "jest --config=server/jest.config.js --coverage",
-    "test:coverage:check": "jest --config=server/jest.config.js --coverage --coverageThreshold='{\"global\":{\"branches\":70,\"functions\":80,\"lines\":80,\"statements\":80}}'",
+    "test:coverage:check": "npm run test:coverage && tsx scripts/check-coverage.ts",
     "test:pre-commit": "jest --config=server/jest.config.js --findRelatedTests --bail",
     "test:integration": "jest --config=server/jest.config.js --testPathPattern=integration",
     "test:e2e": "playwright test",
