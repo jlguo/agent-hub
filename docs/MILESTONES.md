@@ -703,11 +703,16 @@ At the end of each month:
 
 ## Related Documents
 
-- [`docs/PHASES.md`](PHASES.md) - Original phase documentation (superseded by this)
-- [`docs/TEST-QUALITY-REVIEW-2026-04-02.md`](TEST-QUALITY-REVIEW-2026-04-02.md) - Test quality analysis
-- [`skills/test-writing-rules/SKILL.md`](../skills/test-writing-rules/SKILL.md) - Test writing skill
+### Current (Active)
+- [`docs/TEST-QUALITY-REVIEW-2026-04-02.md`](TEST-QUALITY-REVIEW-2026-04-02.md) - Test quality analysis and remediation plan
+- [`skills/test-writing-rules/SKILL.md`](../skills/test-writing-rules/SKILL.md) - Test writing skill (enforceable rules)
 - [`STATUS.md`](../STATUS.md) - Current system status
 - [`ARCHITECTURE.md`](../ARCHITECTURE.md) - System architecture
+- [`docs/FEATURES.md`](FEATURES.md) - Feature specifications
+
+### Historical (Archived)
+- [`docs/ARCHIVE/PLANNING/PHASES.md`](ARCHIVE/PLANNING/PHASES.md) - Original phase documentation (superseded by MILESTONES.md)
+- [`docs/ARCHIVE/TESTING/`](ARCHIVE/TESTING/) - Old testing documentation (superseded by test-writing skill)
 
 ---
 
