@@ -31,4 +31,6 @@ export default {
       tsconfig: 'server/tsconfig.json',
     }],
   },
+  // Run tests in sequence to avoid database conflicts
+  maxWorkers: 1,
 };
