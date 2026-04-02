@@ -14,7 +14,7 @@ This document consolidates all planning, phases, and milestones into a single so
 
 - ✅ **Milestone 1 & 2**: Complete (archived)
 - 🆕 **Milestone 3**: Production Readiness (consolidated, 2 phases)
-- 🆕 **Milestone 4**: Test Quality Remediation (NEW - P0 Priority)
+- 🆕 **Milestone 4**: Test Quality Remediation (NEW - Must-Have Priority)
 - 🆕 **Future Milestones**: 5+ (planned)
 
 ### New Project Management Approach
@@ -39,7 +39,7 @@ Evaluating **Aha! methodology** adaptation for lightweight agile development (se
 |----------------|----------------|----------------|
 | **Goals → Ideas → Features** | Goals → Milestones → Tasks | This document structure |
 | **Strategic Roadmaps** | Quarterly milestones | Milestone timeline below |
-| **Idea Scoring** | Priority labels (P0-P3) | Each task has priority |
+| **Idea Scoring** | Priority labels (Must-Have/Should-Have/Nice-to-Have) | Each task has priority |
 | **Feature Launch** | Milestone completion | Definition of Done |
 | **Feedback Loops** | Weekly reviews | Status updates |
 | **Portfolio View** | This consolidated doc | Single source of truth |
@@ -92,7 +92,7 @@ Daily Execution
     |                   |                   |                   |
     |                   |                   ├─ Milestone 4      |
     |                   |                   |  (Test Quality)   |
-    |                   |                   |  🔴 P0 - BLOCKER  |
+    |                   |                   |  🔴 Must-Have - BLOCKER  |
     |                   |                   |                   |
     |                   |                   |                   |
     2026-05-31          2026-06-30          2026-09-30
@@ -118,7 +118,7 @@ Daily Execution
 
 **Status**: COMPLETE  
 **Timeline**: 2026-03-24 to 2026-03-27 (4 days)  
-**Priority**: P0 (Foundation)
+**Priority**: Must-Have (Foundation)
 
 #### Goals
 - [x] Database schema with relationships
@@ -148,7 +148,7 @@ Daily Execution
 
 **Status**: COMPLETE  
 **Timeline**: 2026-03-27 to 2026-03-30 (4 days)  
-**Priority**: P0 (Core value proposition)
+**Priority**: Must-Have (Core value proposition)
 
 #### Goals
 - [x] Heat-based response system
@@ -188,12 +188,12 @@ Daily Execution
 
 **Status**: IN PROGRESS (Phase 1: 80% complete)  
 **Timeline**: 2026-03-30 to 2026-04-22 (4 weeks total)  
-**Priority**: P0 (Critical for deployment)
+**Priority**: Must-Have (Critical for deployment)
 
 **Structure**:
-- **Phase 1**: Polish & Cleanup (P1, 1 week)
-- **Phase 2**: Production Deployment (P0, 2 weeks, BLOCKED by Milestone 4)
-- **Phase 3**: Monitoring & Security (P0, 1 week)
+- **Phase 1**: Polish & Cleanup (Should-Have, 1 week)
+- **Phase 2**: Production Deployment (Must-Have, 2 weeks, BLOCKED by Milestone 4)
+- **Phase 3**: Monitoring & Security (Must-Have, 1 week)
 
 ---
 
@@ -201,7 +201,7 @@ Daily Execution
 
 **Status**: IN PROGRESS (80% complete)  
 **Timeline**: 2026-03-30 to 2026-04-05 (7 days)  
-**Priority**: P1 (Quality of life)
+**Priority**: Should-Have (Quality of life)
 
 **Goals**
 - [x] Codebase cleanup
@@ -245,7 +245,7 @@ Daily Execution
 
 **Status**: PLANNED (blocked by Milestone 4)  
 **Timeline**: 2026-04-16 to 2026-04-22 (1 week)  
-**Priority**: P0 (Critical for deployment)
+**Priority**: Must-Have (Critical for deployment)
 
 **BLOCKER**: Must complete Milestone 4 (Test Quality) first
 
@@ -281,7 +281,7 @@ Daily Execution
 
 **Status**: PLANNED  
 **Timeline**: 2026-04-22 to 2026-04-30 (1 week)  
-**Priority**: P0 (Critical for production)
+**Priority**: Must-Have (Critical for production)
 
 **Goals**
 - [ ] Monitoring & alerting
@@ -307,11 +307,11 @@ Daily Execution
 
 ---
 
-### 🔴 Milestone 4: Test Quality Remediation (P0 BLOCKER)
+### 🔴 Milestone 4: Test Quality Remediation (Must-Have BLOCKER)
 
 **Status**: NOT STARTED  
 **Timeline**: 2026-04-02 to 2026-04-16 (2 weeks)  
-**Priority**: **P0 - BLOCKS ALL OTHER WORK**
+**Priority**: **Must-Have - BLOCKS ALL OTHER WORK**
 
 **See**: [`docs/TEST-QUALITY-REVIEW-2026-04-02.md`](TEST-QUALITY-REVIEW-2026-04-02.md) for full analysis
 
@@ -437,7 +437,7 @@ Daily Execution
 
 #### Resources
 - **Estimated Effort**: 55 hours (7-10 days)
-- **Priority**: P0 - **BLOCKS Milestone 3B and all future milestones**
+- **Priority**: Must-Have - **BLOCKS Milestone 3B and all future milestones**
 - **Owner**: Development Team
 - **Review**: Daily progress checks
 
@@ -450,7 +450,7 @@ Daily Execution
 
 **Status**: FUTURE  
 **Timeline**: 2026-05-01 to 2026-05-31 (1 month)  
-**Priority**: P1 (Important but not critical)
+**Priority**: Should-Have (Important but not critical)
 
 #### Goals
 - [ ] Typing indicators
@@ -503,7 +503,7 @@ Daily Execution
 
 **Status**: FUTURE  
 **Timeline**: 2026-06-01 to 2026-06-30 (1 month)  
-**Priority**: P2 (Nice to have)
+**Priority**: Should-Have (Nice to have)
 
 #### Goals
 - [ ] Advanced moderation tools
@@ -551,7 +551,7 @@ Daily Execution
 
 **Status**: VISION  
 **Timeline**: 2026-07-01 onwards  
-**Priority**: P3 (Future exploration)
+**Priority**: Nice-to-Have (Future exploration)
 
 #### Potential Features
 - [ ] Voice message support
@@ -576,37 +576,34 @@ Daily Execution
 
 ## Priority System
 
-We use a 4-tier priority system:
+We use a 3-tier priority system (MoSCoW method):
 
-| Priority | Label | Description | Response Time |
-|----------|-------|-------------|---------------|
-| **P0** | 🔴 BLOCKER | Blocks deployment or critical functionality | Immediate (same day) |
-| **P1** | 🟡 CRITICAL | Important for production, impacts users | This sprint (1-2 weeks) |
-| **P2** | 🟢 IMPORTANT | Nice to have, improves experience | Next sprint (2-4 weeks) |
-| **P3** | ⚪ FUTURE | Long-term vision, exploratory | Backlog (1-3 months) |
+| Priority | Label | Description | Timeline |
+|----------|-------|-------------|----------|
+| **Must-Have** | 🔴 | Critical for success, blocks other work | Immediate / This milestone |
+| **Should-Have** | 🟡 | Important but not blocking, high value | Next milestone / 1-2 weeks |
+| **Nice-to-Have** | 🟢 | Desirable improvements, low pressure | Future / 2-4+ weeks |
 
 ### Priority Assignment Rules
 
-**P0 Examples**:
+**Must-Have Examples** (Non-negotiable):
 - Security vulnerabilities
 - Data loss bugs
 - Production deployment blockers
 - Test coverage < 85% (current Milestone 4)
+- Critical functionality broken
 
-**P1 Examples**:
+**Should-Have Examples** (Important but not blocking):
 - Performance issues (>3s response time)
-- Missing critical features (typing indicators)
+- Missing important features (typing indicators)
 - Production monitoring gaps
+- UX improvements for core flows
 
-**P2 Examples**:
-- UI polish
+**Nice-to-Have Examples** (When time permits):
+- UI polish and animations
 - Analytics dashboard
 - Mobile optimization
-
-**P3 Examples**:
-- Voice messages
-- Multi-language
-- Advanced AI features
+- Advanced features (voice messages, multi-language)
 
 ---
 
@@ -658,7 +655,7 @@ At the end of each month:
 **What We Adopted**:
 - Goals → Milestones → Tasks hierarchy
 - Quarterly milestone planning
-- Priority scoring (P0-P3)
+- Priority labels (Must-Have, Should-Have, Nice-to-Have)
 - Strategic roadmap view
 - Weekly feedback loops
 
@@ -667,10 +664,11 @@ At the end of each month:
 - Complex idea scoring algorithms
 - Extensive documentation requirements
 - Formal stage-gate process
+- P0/P1/P2/P3 naming (confusing with Phase 1, Phase 0)
 
 **Review Date**: 2026-07-02 (quarterly)
 
-### 2026-04-02: Test Quality as P0 Blocker
+### 2026-04-02: Test Quality as Must-Have Blocker
 
 **Decision**: Milestone 4 (Test Quality) blocks all future work
 
@@ -681,7 +679,7 @@ At the end of each month:
 - Enforcement requires tests to exist first
 
 **Impact**:
-- Milestone 3B (Production) delayed until tests complete
+- Milestone 3 Phase 2 (Production) delayed until tests complete
 - Milestone 5+ (Future features) delayed
 - 2 weeks focused on test writing
 - No new features until Milestone 4 complete
@@ -697,7 +695,7 @@ At the end of each month:
 | **Milestone** | Major achievement with clear Definition of Done |
 | **Goal** | High-level objective (quarterly) |
 | **Task** | Specific work item (weekly) |
-| **P0-P3** | Priority levels (Blocker → Future) |
+| **Must-Have/Should-Have/Nice-to-Have** | Priority levels (Blocker → Future) |
 | **DoD** | Definition of Done (completion criteria) |
 | **Sprint** | 2-week development cycle (optional) |
 
