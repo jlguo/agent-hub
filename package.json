@@ -27,7 +27,16 @@
     "test:e2e:debug": "playwright test --debug",
     "test:validate-rules": "tsx scripts/validate-tests.ts",
     "test:ci": "npm run test -- --ci --reporters=default --reporters=jest-junit",
-    "prepare": "husky"
+    "prepare": "husky",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:restart": "docker-compose restart",
+    "docker:clean": "docker-compose down -v",
+    "k8s:dev": "helm upgrade --install agent-hub-dev ./k8s/helm/agent-hub --namespace agent-hub-dev --create-namespace --values k8s/helm/agent-hub/values-dev.yaml",
+    "k8s:prod": "helm upgrade --install agent-hub-prod ./k8s/helm/agent-hub --namespace agent-hub-prod --create-namespace",
+    "k8s:uninstall": "helm uninstall agent-hub-dev agent-hub-prod 2>/dev/null || true"
   },
   "keywords": [
     "agent",

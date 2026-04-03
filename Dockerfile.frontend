@@ -1,0 +1,55 @@
+# Stage 1: Base image
+FROM node:20-alpine AS base
+
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+# Stage 2: Build stage
+FROM base AS builder
+
+RUN npm ci
+
+COPY . .
+
+# Build Next.js application
+WORKDIR /app/client
+RUN npm ci
+RUN npm run build
+
+# Stage 3: Production image
+FROM base AS production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodeuser
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json ./
+COPY client/package.json client/package-lock.json ./client/
+
+# Install production dependencies only
+RUN npm ci --only=production && \
+    cd client && npm ci --only=production
+
+# Copy built artifacts from builder
+COPY --from=builder /app/client/.next ./client/.next
+COPY --from=builder /app/client/public ./client/public
+COPY --from=builder /app/client/next.config.js ./client/
+
+# Set ownership
+RUN chown -R nodeuser:nodejs /app
+
+USER nodeuser
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
+
+# Start Next.js
+WORKDIR /app/client
+CMD ["npm", "run", "start"]
