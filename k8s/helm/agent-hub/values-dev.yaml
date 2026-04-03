@@ -5,37 +5,47 @@ replicaCount: 1
 image:
   backend:
     repository: agent-hub-backend
-    pullPolicy: IfNotPresent  # Use local images
+    pullPolicy: Never  # Use only local images
     tag: "dev"
   frontend:
     repository: agent-hub-frontend
-    pullPolicy: IfNotPresent
+    pullPolicy: Never
     tag: "dev"
 
-# Enable hostPath volumes for hot reload
+# Security context with seccompProfile for PodSecurity compliance
 backend:
-  volumeMounts:
-  - name: source-code
-    mountPath: /app/server
-  extraArgs: ["npm", "run", "dev"]  # tsx watch for hot reload
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+      - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts: []
+  extraArgs: []
 
 frontend:
-  volumeMounts:
-  - name: source-code
-    mountPath: /app/client
-  extraArgs: ["npm", "run", "dev"]  # Next.js dev server
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+      - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts: []
+  extraArgs: []
 
-# Add hostPath volume for source code
+# Use emptyDir instead of PVC for local dev
+persistence:
+  enabled: false
+
 volumes:
 - name: prisma-storage
-  persistentVolumeClaim:
-    claimName: agent-hub-db-pvc
+  emptyDir: {}
 - name: logs-storage
   emptyDir: {}
-- name: source-code
-  hostPath:
-    path: /home/jlguo/agent-hub
-    type: Directory
 
 # Disable ingress for local dev (use port-forward)
 ingress:
@@ -49,15 +59,13 @@ autoscaling:
 networkPolicy:
   enabled: true
 
-# Enable basic monitoring
+# Disable monitoring for local dev (no Prometheus Operator)
 monitoring:
-  enabled: true
+  enabled: false
   serviceMonitor:
-    enabled: true
-    interval: 30s
-    scrapeTimeout: 10s
+    enabled: false
   prometheusRules:
-    enabled: false  # Disable alerts for dev
+    enabled: false
 
 # Development config
 config:

@@ -1,6 +1,6 @@
 /**
  * OpenClaw Gateway API
- * 
+ *
  * Allows remote clients to call OpenClaw agents via HTTP
  * Supports both token authentication and API key authentication
  */
@@ -38,13 +38,13 @@ export interface GatewayResponse {
 
 /**
  * POST /api/openclaw/gateway
- * 
+ *
  * Call OpenClaw agent via HTTP Gateway
- * 
+ *
  * Authentication:
  * - Bearer token: Authorization: Bearer <OPENCLAW_VERIFICATION_TOKEN>
  * - API key: X-API-Key: <API_KEY>
- * 
+ *
  * Request:
  * {
  *   "message": "Hello!",
@@ -55,7 +55,7 @@ export interface GatewayResponse {
  *   "replyAccount": "family",  // Optional
  *   "replyTo": "oc_xxx"        // Optional
  * }
- * 
+ *
  * Response:
  * {
  *   "success": true,
@@ -72,7 +72,8 @@ export interface GatewayResponse {
  *   }
  * }
  */
-router.post('/gateway', 
+router.post(
+  '/gateway',
   // Support both token and API key authentication
   (req: AuthRequest, res, next) => {
     // Try token auth first, then API key auth
@@ -83,14 +84,14 @@ router.post('/gateway',
     } else {
       return res.status(401).json({
         error: 'Missing authentication',
-        hint: 'Use Authorization: Bearer <token> or X-API-Key: <key>'
+        hint: 'Use Authorization: Bearer <token> or X-API-Key: <key>',
       });
     }
   },
-  
+
   async (req: AuthRequest, res) => {
     const startTime = Date.now();
-    
+
     try {
       const {
         message,
@@ -99,7 +100,7 @@ router.post('/gateway',
         context,
         deliver = false,
         replyAccount,
-        replyTo
+        replyTo,
       } = req.body as GatewayRequest;
 
       // Validate required fields
@@ -107,7 +108,7 @@ router.post('/gateway',
         return res.status(400).json({
           error: 'Missing required fields',
           required: ['message', 'agent', 'sessionId'],
-          hint: 'Provide message, agent, and sessionId in request body'
+          hint: 'Provide message, agent, and sessionId in request body',
         });
       }
 
@@ -117,7 +118,7 @@ router.post('/gateway',
       console.log(`  Message length: ${message.length} chars`);
 
       // Call OpenClaw service
-      const openClawService = new OpenClawService();
+      const openClawService = OpenClawService;
       const response = await openClawService.sendMessage(
         message,
         agent,
@@ -139,21 +140,20 @@ router.post('/gateway',
           agent,
           sessionId,
           timestamp: new Date().toISOString(),
-          duration
-        }
+          duration,
+        },
       };
 
       console.log(`[OpenClaw Gateway] ✅ Success in ${duration}ms`);
       res.json(result);
-
     } catch (error: any) {
       const duration = Date.now() - startTime;
       console.error(`[OpenClaw Gateway] ❌ Error after ${duration}ms:`, error.message);
-      
+
       res.status(500).json({
         error: 'Failed to process request',
         message: error.message,
-        duration
+        duration,
       });
     }
   }
@@ -161,14 +161,14 @@ router.post('/gateway',
 
 /**
  * GET /api/openclaw/gateway/health
- * 
+ *
  * Health check endpoint (no auth required)
  */
 router.get('/gateway/health', (req, res) => {
   res.json({
     status: 'ok',
     mode: process.env.OPENCLAW_MODE || 'cli',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 

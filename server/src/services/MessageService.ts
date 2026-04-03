@@ -8,15 +8,15 @@ import { Agent } from '@prisma/client';
  * Tuned for natural conversation flow
  */
 const HEAT_CONFIG = {
-  BASE_INCREMENT: 25,          // Base heat per message
+  BASE_INCREMENT: 25, // Base heat per message
   USER_MESSAGE_MULTIPLIER: 2.0, // User messages = 50 heat (WARM zone)
   AGENT_MESSAGE_MULTIPLIER: 0.8, // Agent messages = 20 heat (maintains warmth)
-  DECAY_RATE: 0.12,            // 12% decay per 30s cycle (slower decay)
-  DECAY_INTERVAL_MS: 30000,    // 30 seconds
+  DECAY_RATE: 0.12, // 12% decay per 30s cycle (slower decay)
+  DECAY_INTERVAL_MS: 30000, // 30 seconds
   THRESHOLDS: {
-    HOT: 70,    // 80% response probability
-    WARM: 40,   // 60% response probability
-    COLD: 20,   // 40% response probability
+    HOT: 70, // 80% response probability
+    WARM: 40, // 60% response probability
+    COLD: 20, // 40% response probability
     INACTIVE: 5, // 20% response probability
   },
 };
@@ -34,7 +34,7 @@ const COOLDOWN_MS = 60000; // 60 seconds cooldown
 function parseMentions(message: string): string[] {
   const mentionRegex = /@(\w+)/g;
   const matches = [...message.matchAll(mentionRegex)];
-  return matches.map(match => match[1].toLowerCase());
+  return matches.map((match) => match[1].toLowerCase());
 }
 
 /**
@@ -43,15 +43,15 @@ function parseMentions(message: string): string[] {
 function isOnCooldown(agentId: string): boolean {
   const lastMention = MENTION_COOLDOWNS.get(agentId);
   if (!lastMention) return false;
-  
+
   const now = Date.now();
   const elapsed = now - lastMention;
-  
+
   if (elapsed > COOLDOWN_MS) {
     MENTION_COOLDOWNS.delete(agentId); // Cooldown expired
     return false;
   }
-  
+
   return true;
 }
 
@@ -60,7 +60,7 @@ function isOnCooldown(agentId: string): boolean {
  */
 function setCooldown(agentId: string) {
   MENTION_COOLDOWNS.set(agentId, Date.now());
-  
+
   // Cleanup old cooldowns periodically
   if (MENTION_COOLDOWNS.size > 20) {
     const now = Date.now();
@@ -76,22 +76,27 @@ function setCooldown(agentId: string) {
  * Select agent(s) with @mention targeting and smart fallback
  * Returns array of agents to respond (supports multiple agents)
  */
-function selectAgentsWithMention(message: string, agents: Agent[]): Array<Agent & { selectedByMention: boolean; isFallback?: boolean }> {
+function selectAgentsWithMention(
+  message: string,
+  agents: Agent[]
+): Array<Agent & { selectedByMention: boolean; isFallback?: boolean }> {
   const mentions = parseMentions(message);
   const selectedAgents: Array<Agent & { selectedByMention: boolean; isFallback?: boolean }> = [];
-  
+
   if (mentions.length > 0) {
     // Find agents that match @mentions
     for (const mention of mentions) {
-      const matchedAgent = agents.find(agent => {
+      const matchedAgent = agents.find((agent) => {
         const agentNameLower = agent.name.toLowerCase();
         const agentIdLower = agent.id.toLowerCase();
         const agentRoleLower = agent.role?.toLowerCase() || '';
-        return agentNameLower.includes(mention) || 
-               agentIdLower.includes(mention) ||
-               agentRoleLower.includes(mention);
+        return (
+          agentNameLower.includes(mention) ||
+          agentIdLower.includes(mention) ||
+          agentRoleLower.includes(mention)
+        );
       });
-      
+
       if (matchedAgent) {
         // Check cooldown
         if (!isOnCooldown(matchedAgent.id)) {
@@ -104,19 +109,19 @@ function selectAgentsWithMention(message: string, agents: Agent[]): Array<Agent 
         // Smart fallback for unknown @mentions
         console.log(`[MessageService] Unknown @mention: @${mention}, using smart fallback`);
         // Will add fallback message later
-        selectedAgents.push({ 
-          ...agents[Math.floor(Math.random() * agents.length)], 
-          selectedByMention: true, 
-          isFallback: true 
+        selectedAgents.push({
+          ...agents[Math.floor(Math.random() * agents.length)],
+          selectedByMention: true,
+          isFallback: true,
         });
       }
     }
-    
+
     if (selectedAgents.length > 0) {
       return selectedAgents;
     }
   }
-  
+
   // No mentions or all on cooldown - random selection (1 agent)
   const selected = agents[Math.floor(Math.random() * agents.length)];
   return [{ ...selected, selectedByMention: false }];
@@ -124,7 +129,7 @@ function selectAgentsWithMention(message: string, agents: Agent[]): Array<Agent 
 
 /**
  * Trigger AI response from an agent in the room
- * 
+ *
  * This function:
  * 1. Selects a responding agent (random for MVP)
  * 2. Builds agent context with personality and relationships
@@ -132,7 +137,7 @@ function selectAgentsWithMention(message: string, agents: Agent[]): Array<Agent 
  * 4. Saves response to database
  * 5. Emits WebSocket event to frontend
  * 6. Optionally delivers response back to Feishu channel
- * 
+ *
  * @param deliver - If true, sends response back to Feishu via OpenClaw
  * @param replyAccount - Feishu account ID to use for delivery (e.g., "family")
  */
@@ -146,7 +151,7 @@ export async function triggerAgentResponse(
 ) {
   try {
     console.log(`[MessageService] Triggering agent response for room ${roomId}`);
-    
+
     // 1. Get all agents in room
     const agents = await prisma.agent.findMany({
       where: { roomId },
@@ -155,36 +160,39 @@ export async function triggerAgentResponse(
         relationshipsAsB: true,
       },
     });
-    
+
     if (agents.length === 0) {
       console.warn(`[MessageService] No agents found in room ${roomId}`);
       return;
     }
-    
+
     // 2. Select responding agent(s) with @mention targeting, cooldown, and smart fallback
     const respondingAgents = selectAgentsWithMention(userMessage, agents);
-    console.log(`[MessageService] Selected ${respondingAgents.length} agent(s):`, 
-      respondingAgents.map(a => `${a.name}${a.isFallback ? ' (fallback)' : ''}`).join(', ')
+    console.log(
+      `[MessageService] Selected ${respondingAgents.length} agent(s):`,
+      respondingAgents.map((a) => `${a.name}${a.isFallback ? ' (fallback)' : ''}`).join(', ')
     );
-    
+
     // 3. Trigger responses from all selected agents (with delays for natural flow)
     for (let i = 0; i < respondingAgents.length; i++) {
       const respondingAgent = respondingAgents[i];
-      
+
       // Add delay between multiple agents (2-3 seconds for natural conversation)
       if (i > 0) {
         const delay = 2000 + Math.random() * 1000; // 2-3 seconds
-        console.log(`[MessageService] Waiting ${Math.round(delay)}ms before ${respondingAgent.name} responds...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        console.log(
+          `[MessageService] Waiting ${Math.round(delay)}ms before ${respondingAgent.name} responds...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
-      
+
       try {
         // Build agent context with recent conversation history
         const allRelationships = [
           ...(respondingAgent.relationshipsAsA || []),
           ...(respondingAgent.relationshipsAsB || []),
         ];
-        
+
         // Load recent messages from the same discussion (last 20 messages)
         const recentMessages = await prisma.message.findMany({
           where: { roomId },
@@ -196,20 +204,19 @@ export async function triggerAgentResponse(
             },
           },
         });
-        
+
         // Format messages for agent context (newest first, then reverse for chronological)
-        const formattedHistory = recentMessages.reverse().map(msg => {
-          const sender = msg.senderType === 'human' 
-            ? 'User' 
-            : (msg.agent?.name || 'Agent');
-          return `${sender}: ${msg.content}`;
-        });
-        
-        // Smart fallback: modify prompt for unknown @mention
-        let customPrompt = respondingAgent.isFallback 
-          ? `A user mentioned someone with "@${parseMentions(userMessage).join(', @')}" but that person isn't in our family. Politely clarify this and respond helpfully instead.` 
-          : undefined;
-        
+        const formattedHistory = recentMessages.reverse().map((msg) => ({
+          role: msg.senderType === 'human' ? 'user' : 'assistant',
+          content: msg.content,
+          timestamp: msg.createdAt.toISOString(),
+        }));
+
+        // Smart fallback: modify userMessage for unknown @mention
+        const finalMessage = respondingAgent.isFallback
+          ? `${userMessage} (Note: A user mentioned someone with "@${parseMentions(userMessage).join(', @')}" but that person isn't in our family. Politely clarify this and respond helpfully instead.)`
+          : userMessage;
+
         const agentContext: AgentContext = {
           agentName: respondingAgent.name,
           agentRole: respondingAgent.role || 'Family member',
@@ -231,12 +238,11 @@ export async function triggerAgentResponse(
           roomContext: roomContext || 'Family conversation',
           recentHistory: formattedHistory,
           currentTopic: undefined,
-          customPrompt, // Smart fallback message
         };
-        
+
         // Get AI response via OpenClaw CLI
         const response = await OpenClawService.sendMessage(
-          userMessage,
+          finalMessage,
           respondingAgent.id,
           roomId,
           agentContext,
@@ -244,9 +250,11 @@ export async function triggerAgentResponse(
           replyAccount,
           replyTo
         );
-        
-        console.log(`[MessageService] AI response received from ${respondingAgent.name} (${response.content.length} chars)`);
-        
+
+        console.log(
+          `[MessageService] AI response received from ${respondingAgent.name} (${response.content.length} chars)`
+        );
+
         // Save agent response to database
         const agentMessage = await prisma.message.create({
           data: {
@@ -261,40 +269,49 @@ export async function triggerAgentResponse(
             },
           },
         });
-        
+
         console.log(`[MessageService] ✅ Agent message saved: ${agentMessage.id}`);
-        console.log(`[MessageService] 📡 About to emit agent response to WebSocket, roomId: ${roomId}`);
-        
+        console.log(
+          `[MessageService] 📡 About to emit agent response to WebSocket, roomId: ${roomId}`
+        );
+
         // Emit WebSocket event to frontend
         const io = getIO();
-        console.log(`[MessageService] 📡 Got IO instance, emitting agent response to room: ${roomId}`);
+        console.log(
+          `[MessageService] 📡 Got IO instance, emitting agent response to room: ${roomId}`
+        );
         io.to(roomId).emit('message:new', {
           ...agentMessage,
           agentName: agentMessage.agent?.name || respondingAgent.name,
           agentAvatar: agentMessage.agent?.avatar || undefined,
         });
-        
-        console.log(`[MessageService] ✅ ${respondingAgent.name} responded successfully${respondingAgent.isFallback ? ' (smart fallback)' : ''}`);
-        
+
+        console.log(
+          `[MessageService] ✅ ${respondingAgent.name} responded successfully${respondingAgent.isFallback ? ' (smart fallback)' : ''}`
+        );
+
         // Check if this agent message contains @mentions that should trigger responses from OTHER agents
         if (agentMessage.senderType === 'agent') {
           const allMentions = parseMentions(agentMessage.content);
           if (allMentions.length > 0) {
             // Filter to only mentioned agents (excluding the current speaker)
-            const mentionedAgentsToRespond = agents.filter(agent => {
+            const mentionedAgentsToRespond = agents.filter((agent) => {
               const mentionedName = agent.name.toLowerCase().replace(/\s+/g, '');
               const mentionedRole = agent.role?.toLowerCase().replace(/\s+/g, '') || '';
-              const isMentioned = allMentions.some(mention => 
-                mention === mentionedName || 
-                mention === mentionedRole ||
-                mention === agent.id.toLowerCase()
+              const isMentioned = allMentions.some(
+                (mention) =>
+                  mention === mentionedName ||
+                  mention === mentionedRole ||
+                  mention === agent.id.toLowerCase()
               );
               // Don't trigger response from the same agent who just spoke
               return isMentioned && agent.id !== respondingAgent.id;
             });
-            
+
             if (mentionedAgentsToRespond.length > 0) {
-              console.log(`[MessageService] 🎯 Agent ${respondingAgent.name} mentioned: ${mentionedAgentsToRespond.map(a => a.name).join(', ')}`);
+              console.log(
+                `[MessageService] 🎯 Agent ${respondingAgent.name} mentioned: ${mentionedAgentsToRespond.map((a) => a.name).join(', ')}`
+              );
               // Trigger responses from mentioned agents (with 2-3s delay for natural flow)
               for (const mentionedAgent of mentionedAgentsToRespond) {
                 // Check cooldown
@@ -303,100 +320,110 @@ export async function triggerAgentResponse(
                   continue;
                 }
                 setCooldown(mentionedAgent.id);
-                
-                setTimeout(async () => {
-                  try {
-                    // Build context for mentioned agent
-                    const recentMessages = await prisma.message.findMany({
-                      where: { roomId },
-                      orderBy: { createdAt: 'desc' },
-                      take: 15,
-                      include: { agent: { select: { name: true } } },
-                    });
-                    
-                    const formattedHistory = recentMessages.reverse().map(msg => {
-                      const sender = msg.senderType === 'human' ? 'User' : (msg.agent?.name || 'Agent');
-                      return `${sender}: ${msg.content}`;
-                    });
-                    
-                    const allRelationships = [
-                      ...(mentionedAgent.relationshipsAsA || []),
-                      ...(mentionedAgent.relationshipsAsB || []),
-                    ];
-                    
-                    const agentContext: AgentContext = {
-                      agentName: mentionedAgent.name,
-                      agentRole: mentionedAgent.role || 'Family member',
-                      personality: {
-                        talkativeness: mentionedAgent.talkativeness || 7,
-                        empathy: mentionedAgent.empathy || 6,
-                        curiosity: mentionedAgent.curiosity || 8,
-                      },
-                      relationships: allRelationships.map((r) => {
-                        const isAgentA = r.agentAId === mentionedAgent.id;
-                        const otherAgentId = isAgentA ? r.agentBId : r.agentAId;
-                        return {
-                          with: otherAgentId,
-                          type: r.type,
-                          strength: r.strength,
-                        };
-                      }),
-                      roomContext: roomContext || 'Family conversation',
-                      recentHistory: formattedHistory,
-                      currentTopic: undefined,
-                      customPrompt: `You were directly mentioned by ${respondingAgent.name}. Respond naturally to what they said.`,
-                    };
-                    
-                    // Get AI response
-                    const response = await OpenClawService.sendMessage(
-                      agentMessage.content,
-                      mentionedAgent.id,
-                      roomId,
-                      agentContext,
-                      deliver,
-                      replyAccount,
-                      replyTo
-                    );
-                    
-                    // Save and emit
-                    const followupMessage = await prisma.message.create({
-                      data: {
+
+                setTimeout(
+                  async () => {
+                    try {
+                      // Build context for mentioned agent
+                      const recentMessages = await prisma.message.findMany({
+                        where: { roomId },
+                        orderBy: { createdAt: 'desc' },
+                        take: 15,
+                        include: { agent: { select: { name: true } } },
+                      });
+
+                      const formattedHistory = recentMessages.reverse().map((msg) => ({
+                        role: msg.senderType === 'human' ? 'user' : 'assistant',
+                        content: msg.content,
+                        timestamp: msg.createdAt.toISOString(),
+                      }));
+
+                      const allRelationships = [
+                        ...(mentionedAgent.relationshipsAsA || []),
+                        ...(mentionedAgent.relationshipsAsB || []),
+                      ];
+
+                      const agentContext: AgentContext = {
+                        agentName: mentionedAgent.name,
+                        agentRole: mentionedAgent.role || 'Family member',
+                        personality: {
+                          talkativeness: mentionedAgent.talkativeness || 7,
+                          empathy: mentionedAgent.empathy || 6,
+                          curiosity: mentionedAgent.curiosity || 8,
+                        },
+                        relationships: allRelationships.map((r) => {
+                          const isAgentA = r.agentAId === mentionedAgent.id;
+                          const otherAgentId = isAgentA ? r.agentBId : r.agentAId;
+                          return {
+                            with: otherAgentId,
+                            type: r.type,
+                            strength: r.strength,
+                          };
+                        }),
+                        roomContext: roomContext || 'Family conversation',
+                        recentHistory: formattedHistory,
+                        currentTopic: undefined,
+                      };
+
+                      // Get AI response
+                      const response = await OpenClawService.sendMessage(
+                        agentMessage.content,
+                        mentionedAgent.id,
                         roomId,
-                        agentId: mentionedAgent.id,
-                        senderType: 'agent',
-                        content: response.content,
-                      },
-                      include: {
-                        agent: { select: { name: true, avatar: true } },
-                      },
-                    });
-                    
-                    const io = getIO();
-                    const emitData = {
-                      ...followupMessage,
-                      agentName: followupMessage.agent?.name || mentionedAgent.name,
-                      agentAvatar: followupMessage.agent?.avatar || undefined,
-                    };
-                    io.to(roomId).emit('message:new', emitData);
-                    
-                    console.log(`[MessageService] ✅ ${mentionedAgent.name} responded to @mention from ${respondingAgent.name}`);
-                    console.log(`[MessageService] 📡 WebSocket emit to room ${roomId}: ${emitData.content.substring(0, 50)}...`);
-                    
-                  } catch (error: any) {
-                    console.error(`[MessageService] ❌ Error with ${mentionedAgent.name} followup:`, error.message);
-                  }
-                }, 2000 + Math.random() * 1000);
+                        agentContext,
+                        deliver,
+                        replyAccount,
+                        replyTo
+                      );
+
+                      // Save and emit
+                      const followupMessage = await prisma.message.create({
+                        data: {
+                          roomId,
+                          agentId: mentionedAgent.id,
+                          senderType: 'agent',
+                          content: response.content,
+                        },
+                        include: {
+                          agent: { select: { name: true, avatar: true } },
+                        },
+                      });
+
+                      const io = getIO();
+                      const emitData = {
+                        ...followupMessage,
+                        agentName: followupMessage.agent?.name || mentionedAgent.name,
+                        agentAvatar: followupMessage.agent?.avatar || undefined,
+                      };
+                      io.to(roomId).emit('message:new', emitData);
+
+                      console.log(
+                        `[MessageService] ✅ ${mentionedAgent.name} responded to @mention from ${respondingAgent.name}`
+                      );
+                      console.log(
+                        `[MessageService] 📡 WebSocket emit to room ${roomId}: ${emitData.content.substring(0, 50)}...`
+                      );
+                    } catch (error: any) {
+                      console.error(
+                        `[MessageService] ❌ Error with ${mentionedAgent.name} followup:`,
+                        error.message
+                      );
+                    }
+                  },
+                  2000 + Math.random() * 1000
+                );
               }
             }
           }
         }
-        
       } catch (error: any) {
-        console.error(`[MessageService] ❌ Error with ${respondingAgent.name} response:`, error.message);
+        console.error(
+          `[MessageService] ❌ Error with ${respondingAgent.name} response:`,
+          error.message
+        );
         // Continue with next agent even if one fails
       }
     }
-    
   } catch (error: any) {
     console.error('[MessageService] ❌ Error triggering agent response:', error.message);
     // Don't rethrow - agent response is best-effort
@@ -434,7 +461,10 @@ export async function handleFeishuMessage(
     });
 
     console.log('[MessageService] ✅ Feishu message saved:', message.id);
-    console.log('[MessageService] 📡 About to emit to WebSocket, roomId:', normalizedMessage.roomId);
+    console.log(
+      '[MessageService] 📡 About to emit to WebSocket, roomId:',
+      normalizedMessage.roomId
+    );
 
     // Emit to WebSocket (for Web UI clients)
     const io = getIO();
@@ -448,7 +478,7 @@ export async function handleFeishuMessage(
     // If human message, check for discussion trigger or normal agent response
     if (normalizedMessage.senderType === 'human') {
       console.log('[MessageService] 🔥 Triggering agent response for Feishu message');
-      
+
       // Get room for context
       const room = await prisma.room.findUnique({
         where: { id: normalizedMessage.roomId },
@@ -468,16 +498,22 @@ export async function handleFeishuMessage(
       }
 
       // Check if this is a discussion trigger
-      const discussionTopic = normalizedMessage.content.match(/^\/discuss\s+(.+)/i)?.[1]?.trim() ||
-                             normalizedMessage.content.match(/^let's discuss\s+(.+)/i)?.[1]?.trim() ||
-                             normalizedMessage.content.match(/^咱们讨论一下\s*(.+)/i)?.[1]?.trim();
-      
+      const discussionTopic =
+        normalizedMessage.content.match(/^\/discuss\s+(.+)/i)?.[1]?.trim() ||
+        normalizedMessage.content.match(/^let's discuss\s+(.+)/i)?.[1]?.trim() ||
+        normalizedMessage.content.match(/^咱们讨论一下\s*(.+)/i)?.[1]?.trim();
+
       if (discussionTopic) {
         // Trigger autonomous agent discussion
         console.log(`[MessageService] Discussion triggered from Feishu: "${discussionTopic}"`);
         import('./DiscussionService.js').then(({ triggerAgentDiscussion }) => {
-          triggerAgentDiscussion(normalizedMessage.roomId, discussionTopic, undefined, sendToFeishu, feishuChatId)
-            .catch(console.error);
+          triggerAgentDiscussion(
+            normalizedMessage.roomId,
+            discussionTopic,
+            undefined,
+            sendToFeishu,
+            feishuChatId
+          ).catch(console.error);
         });
       } else {
         // Normal agent response with callback to send back to Feishu
@@ -489,10 +525,10 @@ export async function handleFeishuMessage(
             // This callback is called when agent responds
             const agentName = agentMessage.agent?.name || 'Agent';
             const agentAvatar = agentMessage.agent?.avatar || '';
-            
+
             // Format: "👩 Mom: [message]"
             const formattedContent = `${agentAvatar} ${agentName}: ${agentMessage.content}`;
-            
+
             // Send to Feishu
             await sendToFeishu(feishuChatId, formattedContent);
             console.log('[MessageService] ✅ Agent response sent to Feishu');
@@ -500,7 +536,6 @@ export async function handleFeishuMessage(
         );
       }
     }
-
   } catch (error: any) {
     console.error('[MessageService] ❌ Error handling Feishu message:', error.message);
   }
@@ -517,11 +552,11 @@ async function triggerAgentResponseWithCallback(
 ) {
   // Same logic as triggerAgentResponse but with callback instead of WebSocket emit
   // This is a simplified version - in production you'd refactor to share code
-  
+
   try {
     // Check for @mentions (100% priority)
     const mentions = parseMentions(userMessage);
-    let selectedAgents: Agent[] = [];
+    const selectedAgents: Agent[] = [];
 
     if (mentions.length > 0) {
       // Parse @mentions and select mentioned agents
@@ -534,10 +569,11 @@ async function triggerAgentResponseWithCallback(
       });
 
       for (const mention of mentions) {
-        const mentionedAgent = allAgents.find(agent =>
-          agent.name.toLowerCase() === mention ||
-          agent.id.toLowerCase() === mention ||
-          (agent.role && agent.role.toLowerCase() === mention)
+        const mentionedAgent = allAgents.find(
+          (agent) =>
+            agent.name.toLowerCase() === mention ||
+            agent.id.toLowerCase() === mention ||
+            (agent.role && agent.role.toLowerCase() === mention)
         );
 
         if (mentionedAgent) {
@@ -577,7 +613,7 @@ async function triggerAgentResponseWithCallback(
       try {
         // Generate OpenClaw session ID (format: family-{agentName})
         const sessionId = `family-${agent.name.toLowerCase()}`;
-        
+
         const response = await OpenClawService.sendMessage(
           userMessage,
           agent.id,
@@ -590,6 +626,9 @@ async function triggerAgentResponseWithCallback(
               empathy: agent.empathy || 6,
               curiosity: agent.curiosity || 8,
             },
+            relationships: [],
+            recentHistory: [],
+            roomContext: 'Family conversation',
           },
           false, // Don't deliver to Feishu (we use callback)
           undefined,
@@ -610,11 +649,15 @@ async function triggerAgentResponseWithCallback(
         });
 
         console.log(`[MessageService] ✅ Agent message saved: ${agentMessage.id}`);
-        console.log(`[MessageService] 📡 About to emit agent response to WebSocket, roomId: ${roomId}`);
-        
+        console.log(
+          `[MessageService] 📡 About to emit agent response to WebSocket, roomId: ${roomId}`
+        );
+
         // Emit WebSocket event to frontend (Web UI)
         const io = getIO();
-        console.log(`[MessageService] 📡 Got IO instance, emitting agent response to room: ${roomId}`);
+        console.log(
+          `[MessageService] 📡 Got IO instance, emitting agent response to room: ${roomId}`
+        );
         io.to(roomId).emit('message:new', {
           ...agentMessage,
           agentName: agentMessage.agent?.name || agent.name,
@@ -624,12 +667,10 @@ async function triggerAgentResponseWithCallback(
 
         // Call the delivery callback (Feishu)
         await onAgentResponse(agentMessage);
-
       } catch (error: any) {
         console.error(`[MessageService] Error with ${agent.name} response:`, error.message);
       }
     }
-
   } catch (error: any) {
     console.error('[MessageService] Error in triggerAgentResponseWithCallback:', error.message);
   }

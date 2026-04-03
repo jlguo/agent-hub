@@ -38,15 +38,19 @@ podSecurityContext:
   runAsUser: 1000
   runAsGroup: 1000
   fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
 
 # Security contexts
 backend:
   securityContext:
     allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: false
     capabilities:
       drop:
       - ALL
+    seccompProfile:
+      type: RuntimeDefault
   service:
     type: ClusterIP
     port: 4000
@@ -66,10 +70,12 @@ backend:
 frontend:
   securityContext:
     allowPrivilegeEscalation: false
-    readOnlyRootFilesystem: true
+    readOnlyRootFilesystem: false
     capabilities:
       drop:
       - ALL
+    seccompProfile:
+      type: RuntimeDefault
   service:
     type: ClusterIP
     port: 3000

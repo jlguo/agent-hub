@@ -1,55 +1,55 @@
-# Stage 1: Base image
+# Multi-stage build for Agent Hub Frontend
 FROM node:20-alpine AS base
 
 RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
 
-# Stage 2: Build stage
-FROM base AS builder
-
-RUN npm ci
-
-COPY . .
-
-# Build Next.js application
-WORKDIR /app/client
-RUN npm ci
-RUN npm run build
-
-# Stage 3: Production image
-FROM base AS production
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nodeuser
-
-WORKDIR /app
-
-# Copy package files
+# Copy root package files
 COPY package.json package-lock.json ./
+
+# Copy client package files
 COPY client/package.json client/package-lock.json ./client/
 
-# Install production dependencies only
-RUN npm ci --only=production && \
-    cd client && npm ci --only=production
+# Stage 2: Build stage (skip build, use dev mode)
+FROM base AS builder
 
-# Copy built artifacts from builder
-COPY --from=builder /app/client/.next ./client/.next
-COPY --from=builder /app/client/public ./client/public
-COPY --from=builder /app/client/next.config.js ./client/
+# Install all dependencies
+WORKDIR /app
+RUN npm install
 
-# Set ownership
-RUN chown -R nodeuser:nodejs /app
+WORKDIR /app/client
+RUN npm install
+
+# Copy client source
+COPY client/ ./client/
+
+# Stage 3: Production image (uses dev mode)
+FROM base AS production
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nodeuser
+
+# Copy ALL dependencies (including dev for next dev)
+WORKDIR /app
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/client/node_modules ./client/node_modules
+COPY --from=builder /app/client ./client
+COPY --from=builder /app/package.json ./package.json
+
+# Create app directory and set ownership
+RUN mkdir -p /app && chown -R nodeuser:nodejs /app
 
 USER nodeuser
+WORKDIR /app/client
 
 # Expose port
 EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
 
-# Start Next.js
-WORKDIR /app/client
-CMD ["npm", "run", "start"]
+# Start Next.js dev server
+CMD ["npm", "run", "dev"]

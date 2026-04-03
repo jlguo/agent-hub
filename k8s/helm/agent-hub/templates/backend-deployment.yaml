@@ -38,19 +38,36 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "agent-hub.serviceAccountName" . }}
       securityContext:
+        {{- if .Values.podSecurityContext }}
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- else }}
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+        {{- end }}
       containers:
       - name: backend
         securityContext:
+          {{- if .Values.backend.securityContext }}
           {{- toYaml .Values.backend.securityContext | nindent 12 }}
+          {{- else }}
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+          {{- end }}
         image: {{ include "agent-hub.backendImage" . }}
         imagePullPolicy: {{ .Values.image.backend.pullPolicy }}
         args:
         {{- if .Values.backend.extraArgs }}
         {{- toYaml .Values.backend.extraArgs | nindent 8 }}
         {{- else }}
-        - "node"
-        - "dist/index.js"
+        - "npm"
+        - "run"
+        - "dev"
         {{- end }}
         ports:
         - name: http
@@ -89,10 +106,13 @@ spec:
         resources:
           {{- toYaml .Values.backend.resources | nindent 10 }}
         volumeMounts:
+        {{- if .Values.backend.volumeMounts }}
         {{- toYaml .Values.backend.volumeMounts | nindent 8 }}
-        {{- toYaml .Values.volumes | nindent 8 }}
+        {{- end }}
       volumes:
+      {{- if .Values.volumes }}
       {{- toYaml .Values.volumes | nindent 6 }}
+      {{- end }}
       {{- with .Values.backend.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

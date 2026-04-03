@@ -1,53 +1,52 @@
-# Stage 1: Base image
+# Multi-stage build for Agent Hub Backend
 FROM node:20-alpine AS base
 
-# Install dependencies for esbuild (needed by tsx)
-RUN apk add --no-cache libc6-compat
+# Install OpenSSL 3 for Prisma compatibility (Alpine 3.18+) + wget for health checks
+RUN apk add --no-cache openssl3 libssl3 libc6-compat wget
 
-# Set working directory
 WORKDIR /app
 
 # Copy package files
 COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm ci --only=production
-
 # Stage 2: Build stage
 FROM base AS builder
 
-RUN npm ci
+# Use npm install instead of ci (more resilient to network issues)
+RUN npm install
 
-COPY . .
+# Copy server source
+COPY server/ ./server/
+COPY prisma/ ./prisma/
 
-# Build the server (if you have a build step)
-# RUN npm run build
+# Generate Prisma client
+RUN npx prisma generate
 
-# Stage 3: Production image
-FROM base AS production
+# Stage 3: Production image (uses tsx watch for development)
+FROM node:20-alpine AS production
 
-# Create non-root user for security
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nodeuser
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nodeuser
 
-# Copy built artifacts
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/package-lock.json ./package-lock.json
+# Copy ALL dependencies (including dev for tsx)
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/server ./server
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/package.json ./package.json
 
-# Set ownership to non-root user
-RUN chown -R nodeuser:nodejs /app
+# Create app directory and set ownership
+RUN mkdir -p /app && chown -R nodeuser:nodejs /app
 
 USER nodeuser
+WORKDIR /app
 
 # Expose port
 EXPOSE 4000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:4000/health || exit 1
+# Health check (use 127.0.0.1 to force IPv4)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:4000/health || exit 1
 
-# Start the server
-CMD ["npm", "run", "start"]
+# Start server with tsx watch (development mode)
+CMD ["npm", "run", "dev"]
