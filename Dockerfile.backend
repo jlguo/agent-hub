@@ -38,8 +38,14 @@ COPY --from=builder /app/package.json ./package.json
 # Create app directory and set ownership
 RUN mkdir -p /app && chown -R nodeuser:nodejs /app
 
+# Create prisma directory with write permissions
+RUN mkdir -p /app/prisma && chown -R nodeuser:nodejs /app/prisma
+
 USER nodeuser
 WORKDIR /app
+
+# Initialize database with correct permissions (create empty DB file if needed)
+RUN touch /app/prisma/dev.db && chown nodeuser:nodejs /app/prisma/dev.db || true
 
 # Expose port
 EXPOSE 4000

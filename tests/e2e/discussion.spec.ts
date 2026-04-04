@@ -8,16 +8,16 @@ test.describe('Agent Discussions', () => {
     // Wait for page to load
     await expect(page).toHaveTitle(/Agent Hub/);
 
-    // Wait for rooms to load
-    await page.waitForSelector('button:has-text("agents")', { timeout: 10000 });
+    // Wait for rooms to load (use room name instead of "agents" text which may be hidden)
+    await page.waitForSelector('button:has-text("Family")', { timeout: 15000 });
     console.log('✅ Rooms loaded');
   });
 
   test('should trigger and display agent discussion', async ({ page }) => {
     console.log('🎙️ Starting discussion test...');
 
-    // Select the first room
-    const roomButton = await page.locator('button:has-text("agents")').first();
+    // Select the Family room
+    const roomButton = await page.locator('button:has-text("Family")').first();
     await roomButton.click();
     console.log('✅ Room selected');
 
