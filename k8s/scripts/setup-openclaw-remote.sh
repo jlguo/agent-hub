@@ -11,11 +11,46 @@ echo ""
 # Check if openclaw CLI is installed
 if ! command -v openclaw &> /dev/null; then
     echo "❌ OpenClaw CLI not found"
-    echo "Install with: npm install -g openclaw"
-    exit 1
+    echo ""
+    echo "Installing OpenClaw CLI..."
+    echo ""
+    
+    # Check if npm is available
+    if command -v npm &> /dev/null; then
+        echo "📦 Installing via npm..."
+        npm install -g openclaw@latest
+    # Check if curl is available for installer script
+    elif command -v curl &> /dev/null; then
+        echo "📦 Installing via official installer script..."
+        curl -fsSL https://openclaw.ai/install.sh | bash
+        # Source the shell config to get openclaw in PATH
+        if [ -f "$HOME/.bashrc" ]; then
+            source "$HOME/.bashrc"
+        elif [ -f "$HOME/.zshrc" ]; then
+            source "$HOME/.zshrc"
+        fi
+    else
+        echo "❌ Neither npm nor curl found"
+        echo ""
+        echo "Please install OpenClaw CLI manually:"
+        echo "  Option 1 (npm): npm install -g openclaw@latest"
+        echo "  Option 2 (curl): curl -fsSL https://openclaw.ai/install.sh | bash"
+        exit 1
+    fi
+    
+    # Verify installation
+    if command -v openclaw &> /dev/null; then
+        echo "✅ OpenClaw CLI installed successfully"
+        openclaw --version
+    else
+        echo "❌ Installation failed"
+        echo ""
+        echo "Please install manually and re-run this script"
+        exit 1
+    fi
+else
+    echo "✅ OpenClaw CLI found: $(openclaw --version)"
 fi
-
-echo "✅ OpenClaw CLI found: $(openclaw --version)"
 echo ""
 
 # Get remote host configuration

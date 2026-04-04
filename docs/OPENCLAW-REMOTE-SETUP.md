@@ -25,10 +25,50 @@
 
 ## Prerequisites
 
-1. **Remote OpenClaw Gateway** running on VPS/home server
-2. **SSH access** to remote host
-3. **OpenClaw CLI** installed on Agent Hub host
-4. **Gateway token** for authentication
+### 1. OpenClaw CLI (Auto-installed by setup script)
+
+**Quick install** (if not using setup script):
+
+```bash
+# Option A: npm (recommended if you have Node.js)
+npm install -g openclaw@latest
+
+# Option B: Official installer script (includes Node.js if needed)
+curl -fsSL https://openclaw.ai/install.sh | bash
+
+# Option C: Local prefix install (isolated to ~/.openclaw)
+curl -fsSL https://openclaw.ai/install-cli.sh | bash
+```
+
+**Verify installation:**
+
+```bash
+openclaw --version
+# Should show: OpenClaw 2026.3.24 (or later)
+```
+
+### 2. Remote OpenClaw Gateway
+
+Must be running on a remote host (VPS/home server):
+
+```bash
+# On remote host
+openclaw gateway status
+```
+
+If not running, see: [Remote Gateway Setup](#appendix-a-remote-gateway-setup)
+
+### 3. SSH Access
+
+SSH access to remote host with key-based authentication:
+
+```bash
+# Test SSH connection
+ssh user@remote-host
+
+# Setup SSH key (if not already done)
+ssh-copy-id user@remote-host
+```
 
 ---
 
