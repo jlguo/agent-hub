@@ -35,17 +35,33 @@ export interface OpenClawResponse {
 }
 
 class OpenClawServiceClass {
-  private mode: 'http' | 'cli';
+  private mode: 'http' | 'cli' | 'remote';
   private gatewayUrl?: string;
   private verificationToken?: string;
 
   constructor() {
-    // Default to CLI mode for backward compatibility
-    this.mode = (process.env.OPENCLAW_MODE as 'http' | 'cli') || 'cli';
-    this.gatewayUrl = process.env.OPENCLAW_GATEWAY_URL || 'http://localhost:4000';
+    // Support three modes:
+    // - 'cli': Local OpenClaw CLI (default)
+    // - 'remote': Remote OpenClaw CLI via SSH tunnel (official method)
+    // - 'http': HTTP Gateway API (deprecated - not supported by OpenClaw)
+    this.mode = (process.env.OPENCLAW_MODE as 'http' | 'cli' | 'remote') || 'cli';
+    this.gatewayUrl = process.env.OPENCLAW_GATEWAY_URL;
     this.verificationToken = process.env.OPENCLAW_VERIFICATION_TOKEN;
 
     console.log(`[OpenClawService] Mode: ${this.mode.toUpperCase()}`);
+
+    if (this.mode === 'remote') {
+      console.log(`[OpenClawService] Remote mode configured`);
+      console.log(
+        `[OpenClawService] Gateway URL: ${this.gatewayUrl || 'ws://127.0.0.1:18789 (default)'}`
+      );
+      console.log(
+        `[OpenClawService] Note: Remote mode uses OpenClaw CLI with gateway.remote.* config`
+      );
+      console.log(
+        `[OpenClawService] Ensure SSH tunnel is running: ssh -N -L 18789:127.0.0.1:18789 user@remote-host`
+      );
+    }
 
     if (this.mode === 'http' && !this.verificationToken) {
       throw new Error('OPENCLAW_VERIFICATION_TOKEN required for HTTP mode');
@@ -158,6 +174,71 @@ class OpenClawServiceClass {
       const duration = Date.now() - startTime;
       console.error(`[OpenClaw HTTP] ❌ Error after ${duration}ms:`, error.message);
       throw error;
+    }
+  }
+
+  /**
+   * Health check for OpenClaw connection
+   * Especially important for remote mode to verify SSH tunnel is working
+   */
+  async healthCheck(): Promise<{
+    status: 'healthy' | 'unhealthy';
+    mode: string;
+    tunnel?: 'connected' | 'disconnected';
+    error?: string;
+  }> {
+    try {
+      if (this.mode === 'remote') {
+        console.log('[OpenClawService] Running remote mode health check...');
+
+        // Test CLI connection (which will use remote gateway through SSH tunnel)
+        const result = await execAsync('openclaw health', {
+          timeout: 10000,
+          maxBuffer: 1 * 1024 * 1024,
+        });
+
+        if (result.stdout.includes('ok') || result.stdout.includes('healthy')) {
+          console.log('[OpenClawService] ✅ Remote gateway health check passed');
+          return {
+            status: 'healthy',
+            mode: 'remote',
+            tunnel: 'connected',
+          };
+        } else {
+          throw new Error('Health check returned unexpected output');
+        }
+      } else if (this.mode === 'cli') {
+        console.log('[OpenClawService] Running local CLI health check...');
+
+        const result = await execAsync('openclaw health', {
+          timeout: 10000,
+          maxBuffer: 1 * 1024 * 1024,
+        });
+
+        if (result.stdout.includes('ok') || result.stdout.includes('healthy')) {
+          console.log('[OpenClawService] ✅ Local CLI health check passed');
+          return {
+            status: 'healthy',
+            mode: 'cli',
+          };
+        } else {
+          throw new Error('Health check returned unexpected output');
+        }
+      } else {
+        // HTTP mode (deprecated)
+        return {
+          status: 'healthy',
+          mode: 'http',
+        };
+      }
+    } catch (error: any) {
+      console.error('[OpenClawService] ❌ Health check failed:', error.message);
+      return {
+        status: 'unhealthy',
+        mode: this.mode,
+        tunnel: 'disconnected',
+        error: error.message,
+      };
     }
   }
 

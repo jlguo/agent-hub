@@ -43,13 +43,28 @@ export { io };
 app.use(cors());
 app.use(express.json());
 
+import { OpenClawService } from './services/OpenClawService';
+
 // Health check endpoint
-app.get('/health', (_req, res) => {
-  res.json({
+app.get('/health', async (_req, res) => {
+  const healthData: any = {
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-  });
+  };
+
+  // Add OpenClaw service status (especially important for remote mode)
+  try {
+    const openClawHealth = await OpenClawService.healthCheck();
+    healthData.openclaw = openClawHealth;
+  } catch (error: any) {
+    healthData.openclaw = {
+      status: 'error',
+      error: error.message,
+    };
+  }
+
+  res.json(healthData);
 });
 
 // API Routes
@@ -110,10 +125,14 @@ httpServer.listen(parseInt(PORT as string), HOST as string, async () => {
   // Start Feishu WebSocket (if configured)
   if (process.env.FEISHU_APP_ID && process.env.FEISHU_APP_SECRET) {
     console.log('📱 Starting Feishu WebSocket (Official SDK)...');
-    
+
     // Connect Feishu message handler to MessageService
     feishuOfficial.on('message', async (normalizedMessage, chatId) => {
-      await handleFeishuMessage(normalizedMessage, chatId, feishuOfficial.sendToFeishu.bind(feishuOfficial));
+      await handleFeishuMessage(
+        normalizedMessage,
+        chatId,
+        feishuOfficial.sendToFeishu.bind(feishuOfficial)
+      );
     });
 
     // Start WebSocket connection (SDK handles authentication)
