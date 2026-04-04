@@ -1,0 +1,24 @@
+[Unit]
+Description=OpenClaw SSH Tunnel for Remote Gateway
+After=network.target
+
+[Service]
+Type=simple
+# Replace 'your-user' with your actual username
+User=your-user
+# Replace with your actual SSH command
+# -N: No remote command (port forwarding only)
+# -o ServerAliveInterval=60: Keep connection alive
+# -o ExitOnForwardFailure=yes: Fail if port already in use
+# -L 18789:127.0.0.1:18789: Forward local 18789 to remote 18789
+ExecStart=/usr/bin/ssh -N -o ServerAliveInterval=60 -o ExitOnForwardFailure=yes -L 18789:127.0.0.1:18789 your-user@your-remote-host
+Restart=always
+RestartSec=10
+
+# Security hardening
+ProtectSystem=strict
+ProtectHome=read-only
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

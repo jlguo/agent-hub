@@ -33,16 +33,59 @@
 
 ```bash
 # Choose integration mode
-OPENCLAW_MODE=http      # Use HTTP Gateway API (default for production)
-OPENCLAW_MODE=cli       # Use local CLI (default for development)
+OPENCLAW_MODE=remote     # Use remote CLI (official method, recommended)
+OPENCLAW_MODE=cli        # Use local CLI (default for local dev)
+OPENCLAW_MODE=http       # ❌ DEPRECATED - HTTP API not supported by OpenClaw Gateway
 
-# HTTP Mode settings
-OPENCLAW_GATEWAY_URL=http://localhost:4000
+# Remote Mode settings (official OpenClaw pattern)
+# Configure via CLI (recommended):
+#   openclaw config set gateway.mode remote
+#   openclaw config set gateway.remote.url ws://127.0.0.1:18789
+#   openclaw config set gateway.remote.token your-token
+OPENCLAW_GATEWAY_URL=ws://127.0.0.1:18789  # Through SSH tunnel
 OPENCLAW_VERIFICATION_TOKEN=xxx
 
 # CLI Mode settings (no extra config needed)
 # Uses openclaw CLI from PATH
 ```
+
+### Remote Mode Setup (Official OpenClaw Method)
+
+**Architecture:**
+
+```
+Agent Hub Backend → SSH Tunnel → OpenClaw Gateway (Remote)
+ws://127.0.0.1:18789            ws://remote-host:18789
+```
+
+**Steps:**
+
+1. **Setup SSH Tunnel** (persistent):
+
+   ```bash
+   # Linux (systemd)
+   sudo systemctl enable openclaw-ssh-tunnel
+   sudo systemctl start openclaw-ssh-tunnel
+
+   # macOS (LaunchAgent)
+   launchctl bootstrap gui/$UID ~/Library/LaunchAgents/ai.openclaw.ssh-tunnel.plist
+   ```
+
+2. **Configure OpenClaw CLI**:
+
+   ```bash
+   openclaw config set gateway.mode remote
+   openclaw config set gateway.remote.url ws://127.0.0.1:18789
+   openclaw config set gateway.remote.token your-token
+   ```
+
+3. **Verify Connection**:
+   ```bash
+   openclaw health
+   openclaw agent --message "test" --agent "family-mom"
+   ```
+
+**See Full Guide:** [`OPENCLAW-REMOTE-SETUP.md`](OPENCLAW-REMOTE-SETUP.md)
 
 ---
 
@@ -63,9 +106,9 @@ export class OpenClawService {
     this.mode = (process.env.OPENCLAW_MODE as 'http' | 'cli') || 'cli';
     this.gatewayUrl = process.env.OPENCLAW_GATEWAY_URL;
     this.verificationToken = process.env.OPENCLAW_VERIFICATION_TOKEN;
-    
+
     console.log(`[OpenClawService] Mode: ${this.mode.toUpperCase()}`);
-    
+
     if (this.mode === 'http' && !this.verificationToken) {
       throw new Error('OPENCLAW_VERIFICATION_TOKEN required for HTTP mode');
     }
@@ -113,7 +156,7 @@ const router = express.Router();
 /**
  * OpenClaw Gateway API
  * POST /api/openclaw/gateway
- * 
+ *
  * Body:
  * {
  *   "message": "text",
@@ -127,20 +170,12 @@ const router = express.Router();
  */
 router.post('/gateway', verifyToken, async (req, res) => {
   try {
-    const {
-      message,
-      agent,
-      sessionId,
-      context,
-      deliver = false,
-      replyAccount,
-      replyTo
-    } = req.body;
+    const { message, agent, sessionId, context, deliver = false, replyAccount, replyTo } = req.body;
 
     // Validate required fields
     if (!message || !agent || !sessionId) {
       return res.status(400).json({
-        error: 'Missing required fields: message, agent, sessionId'
+        error: 'Missing required fields: message, agent, sessionId',
       });
     }
 
@@ -164,15 +199,14 @@ router.post('/gateway', verifyToken, async (req, res) => {
       metadata: {
         agent,
         sessionId,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     });
-
   } catch (error: any) {
     console.error('[OpenClaw Gateway] Error:', error);
     res.status(500).json({
       error: 'Failed to process request',
-      message: error.message
+      message: error.message,
     });
   }
 });
@@ -199,31 +233,29 @@ export interface AuthRequest extends Request {
  */
 export function verifyToken(req: AuthRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
-  
+
   if (!authHeader) {
     return res.status(401).json({
-      error: 'Missing Authorization header'
+      error: 'Missing Authorization header',
     });
   }
 
   // Support: "Bearer <token>" or just "<token>"
-  const token = authHeader.startsWith('Bearer ')
-    ? authHeader.slice(7)
-    : authHeader;
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
 
   const expectedToken = process.env.OPENCLAW_VERIFICATION_TOKEN;
 
   if (!expectedToken) {
     console.warn('[Auth] OPENCLAW_VERIFICATION_TOKEN not configured');
     return res.status(500).json({
-      error: 'Server configuration error'
+      error: 'Server configuration error',
     });
   }
 
   if (token !== expectedToken) {
     console.warn('[Auth] Invalid token attempt');
     return res.status(403).json({
-      error: 'Invalid authentication token'
+      error: 'Invalid authentication token',
     });
   }
 
@@ -238,14 +270,12 @@ export function verifyToken(req: AuthRequest, res: Response, next: NextFunction)
  */
 export function optionalAuth(req: AuthRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
-  
+
   if (authHeader) {
-    const token = authHeader.startsWith('Bearer ')
-      ? authHeader.slice(7)
-      : authHeader;
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
 
     const expectedToken = process.env.OPENCLAW_VERIFICATION_TOKEN;
-    
+
     if (token === expectedToken) {
       req.authenticated = true;
       req.token = token;
@@ -311,6 +341,7 @@ export OPENCLAW_MODE=cli
 ### HTTP Gateway API
 
 **Pros**:
+
 - ✅ Remote deployment (call OpenClaw on different server)
 - ✅ Centralized management (one OpenClaw instance, multiple clients)
 - ✅ Better monitoring (all requests go through gateway)
@@ -319,6 +350,7 @@ export OPENCLAW_MODE=cli
 - ✅ Audit logging
 
 **Cons**:
+
 - ❌ Requires token management
 - ❌ Network latency
 - ❌ More complex setup
@@ -330,12 +362,14 @@ export OPENCLAW_MODE=cli
 ### CLI Integration
 
 **Pros**:
+
 - ✅ Simple setup (no config)
 - ✅ No authentication overhead
 - ✅ Fast (local process)
 - ✅ No network calls
 
 **Cons**:
+
 - ❌ Local only (can't call remote OpenClaw)
 - ❌ No centralized management
 - ❌ Harder to monitor/audit
@@ -383,7 +417,7 @@ export OPENCLAW_MODE=cli
 ```yaml
 # values-dev.yaml
 config:
-  OPENCLAW_MODE: "cli"
+  OPENCLAW_MODE: 'cli'
   # No token needed
 ```
 
@@ -392,11 +426,11 @@ config:
 ```yaml
 # values-production.yaml
 config:
-  OPENCLAW_MODE: "http"
-  OPENCLAW_GATEWAY_URL: "http://openclaw-gateway:4000"
+  OPENCLAW_MODE: 'http'
+  OPENCLAW_GATEWAY_URL: 'http://openclaw-gateway:4000'
 
 secrets:
-  OPENCLAW_VERIFICATION_TOKEN: "prod-token-xxx"
+  OPENCLAW_VERIFICATION_TOKEN: 'prod-token-xxx'
 ```
 
 ---
@@ -406,12 +440,14 @@ secrets:
 ### Token Management
 
 **Development**:
+
 ```bash
 # Generate random token
 openssl rand -hex 32
 ```
 
 **Production**:
+
 - Use external secret management (AWS Secrets Manager, etc.)
 - Rotate tokens every 90 days
 - Different tokens per environment
@@ -426,7 +462,7 @@ import rateLimit from 'express-rate-limit';
 const gatewayLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 100, // 100 requests per minute
-  message: 'Too many requests to OpenClaw Gateway'
+  message: 'Too many requests to OpenClaw Gateway',
 });
 
 router.post('/gateway', gatewayLimiter, verifyToken, handler);
@@ -446,10 +482,10 @@ describe('OpenClawService', () => {
     it('should call HTTP endpoint with token', async () => {
       process.env.OPENCLAW_MODE = 'http';
       process.env.OPENCLAW_VERIFICATION_TOKEN = 'test-token';
-      
+
       const service = new OpenClawService();
       const response = await service.sendMessage('test', 'family-mom', 'test-session');
-      
+
       expect(response.content).toBeDefined();
     });
   });
@@ -457,10 +493,10 @@ describe('OpenClawService', () => {
   describe('CLI Mode', () => {
     it('should call CLI without token', async () => {
       process.env.OPENCLAW_MODE = 'cli';
-      
+
       const service = new OpenClawService();
       const response = await service.sendMessage('test', 'family-mom', 'test-session');
-      
+
       expect(response.content).toBeDefined();
     });
   });
