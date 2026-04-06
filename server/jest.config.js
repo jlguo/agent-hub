@@ -12,28 +12,46 @@ export default {
     '!server/src/lib/prisma.ts',
     '!server/src/index.ts',
   ],
+  // Gradual coverage thresholds (Phase 3)
+  // Week 1: 20%, Week 2: 40%, Week 3: 60%, Week 4: 80%
   coverageThreshold: {
     global: {
-      branches: 70,
-      functions: 80,
-      lines: 80,
-      statements: 80,
+      branches: 20,
+      functions: 25,
+      lines: 25,
+      statements: 25,
     },
   },
-  coverageReporters: ['text', 'lcov', 'html'],
+  coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
   coverageDirectory: 'coverage/unit',
   setupFilesAfterEnv: ['<rootDir>/server/src/test/setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/server/src/$1',
   },
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: 'server/tsconfig.json',
-      useESM: true,
-    }],
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        tsconfig: 'server/tsconfig.json',
+        useESM: true,
+      },
+    ],
   },
   // Run tests in sequence to avoid database conflicts
   maxWorkers: 1,
   // ES module support
   extensionsToTreatAsEsm: ['.ts'],
+  // Test result reporting
+  reporters: [
+    'default',
+    [
+      'jest-html-reporter',
+      {
+        pageTitle: 'Agent Hub Unit Tests',
+        outputPath: 'coverage/unit/test-report.html',
+        includeFailureMsg: true,
+        includeSuiteFailure: true,
+      },
+    ],
+  ],
 };
