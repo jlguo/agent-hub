@@ -53,6 +53,8 @@ app.get('/health', async (_req, res) => {
     uptime: process.uptime(),
   };
 
+  import healthRemoteRouter from './routes/health-remote';
+
   // Add OpenClaw service status (especially important for remote mode)
   try {
     const openClawHealth = await OpenClawService.healthCheck();
@@ -66,6 +68,9 @@ app.get('/health', async (_req, res) => {
 
   res.json(healthData);
 });
+
+// Remote mode health endpoints
+app.use('/health', healthRemoteRouter);
 
 // API Routes
 app.use('/api/rooms', roomsRouter);
