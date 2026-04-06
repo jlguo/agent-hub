@@ -1,0 +1,135 @@
+{{- if .Values.sshTunnel.enabled }}
+# SSH Tunnel Sidecar for Remote OpenClaw Gateway Access
+# This sidecar maintains a persistent SSH tunnel to the remote OpenClaw Gateway
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "agent-hub.fullname" . }}-ssh-tunnel
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agent-hub.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ssh-tunnel
+data:
+  healthcheck.sh: |
+    #!/bin/sh
+    # Health check for SSH tunnel
+    if nc -z localhost 18789 2>/dev/null; then
+      echo "✅ SSH tunnel healthy - port 18789 listening"
+      exit 0
+    else
+      echo "❌ SSH tunnel unhealthy - port 18789 not listening"
+      exit 1
+    fi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "agent-hub.fullname" . }}-ssh-tunnel
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agent-hub.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ssh-tunnel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "agent-hub.selectorLabels" . | nindent 6 }}
+      app: ssh-tunnel
+  template:
+    metadata:
+      labels:
+        {{- include "agent-hub.selectorLabels" . | nindent 8 }}
+        app: ssh-tunnel
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      
+      containers:
+      - name: ssh-tunnel
+        image: "{{ .Values.sshTunnel.image.repository }}:{{ .Values.sshTunnel.image.tag }}"
+        imagePullPolicy: {{ .Values.sshTunnel.image.pullPolicy }}
+        
+        command:
+          - /bin/sh
+          - -c
+          - |
+            cp /etc/ssh-tunnel/id_rsa /tmp/id_rsa &&
+            chmod 600 /tmp/id_rsa &&
+            ssh -o StrictHostKeyChecking=accept-new
+                -o ServerAliveInterval={{ .Values.sshTunnel.keepalive.interval }}
+                -o ServerAliveCountMax={{ .Values.sshTunnel.keepalive.count }}
+                -o ExitOnForwardFailure=yes
+                -o ConnectTimeout=10
+                -N 
+                -L 18789:$(SSH_HOST):18789 
+                -i /tmp/id_rsa 
+                $(SSH_USER)@$(SSH_HOST)
+        
+        env:
+          - name: SSH_HOST
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "agent-hub.fullname" . }}-secrets
+                key: ssh-host
+          - name: SSH_USER
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "agent-hub.fullname" . }}-secrets
+                key: ssh-user
+        
+        volumeMounts:
+          - name: ssh-key
+            mountPath: /etc/ssh-tunnel
+            readOnly: true
+          - name: healthcheck
+            mountPath: /healthcheck.sh
+            subPath: healthcheck.sh
+          - name: tmp
+            mountPath: /tmp
+        
+        resources:
+          {{- toYaml .Values.sshTunnel.resources | nindent 10 }}
+        
+        securityContext:
+          {{- toYaml .Values.sshTunnel.securityContext | nindent 10 }}
+        
+        livenessProbe:
+          exec:
+            command:
+              - /healthcheck.sh
+          initialDelaySeconds: {{ .Values.sshTunnel.healthcheck.startPeriod }}
+          periodSeconds: {{ .Values.sshTunnel.healthcheck.interval }}
+          timeoutSeconds: {{ .Values.sshTunnel.healthcheck.timeout }}
+          failureThreshold: {{ .Values.sshTunnel.healthcheck.retries }}
+        
+        readinessProbe:
+          exec:
+            command:
+              - /healthcheck.sh
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      
+      volumes:
+        - name: ssh-key
+          secret:
+            secretName: {{ include "agent-hub.fullname" . }}-secrets
+            items:
+              - key: ssh-private-key
+                path: id_rsa
+                mode: 0400
+        - name: healthcheck
+          configMap:
+            name: {{ include "agent-hub.fullname" . }}-ssh-tunnel
+            defaultMode: 0755
+        - name: tmp
+          emptyDir: {}
+      
+      restartPolicy: Always
+
+{{- end }}
