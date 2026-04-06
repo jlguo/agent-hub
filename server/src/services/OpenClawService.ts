@@ -488,4 +488,5 @@ class OpenClawServiceClass {
   }
 }
 
+export { OpenClawServiceClass };
 export const OpenClawService = new OpenClawServiceClass();

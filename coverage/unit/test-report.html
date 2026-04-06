@@ -1,0 +1,303 @@
+<html><head><meta charset="utf-8"/><title>Agent Hub Unit Tests</title><style type="text/css">:root {
+  --text-primary: #111;
+  --text-secondary: #4f4f4f;
+  --success: #006633;
+  --success-bright: #80ffbf;
+  --danger: #cc071e;
+  --danger-bright: #fbdfe0;
+  --warning: #995c00;
+  --warning-bright: #ffeea8;
+  --panel: #eee;
+  --border: #949494;
+  --disabled: #6b6b6b;
+}
+
+html,
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  margin: 0;
+  padding: 0;
+  color: var(--text-primary);
+}
+body {
+  padding: 2rem 1rem;
+}
+.jesthtml-content {
+  margin: 0 auto;
+  max-width: 70rem;
+}
+header {
+  display: flex;
+  align-items: center;
+}
+#title {
+  margin: 0;
+  flex-grow: 1;
+}
+#logo {
+  height: 4rem;
+}
+#timestamp {
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+}
+
+#metadata-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.additional-information-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+}
+
+/** SUMMARY */
+#summary {
+  color: var(--text-primary);
+  display: flex;
+  font-family: monospace;
+  font-size: 1rem;
+}
+#summary > div {
+  margin-right: 0.5rem;
+  background: var(--panel);
+  padding: 1rem;
+  min-width: 15rem;
+}
+#summary > div:last-child {
+  margin-right: 0;
+}
+@media only screen and (max-width: 720px) {
+  #summary {
+    flex-direction: column;
+  }
+  #summary > div {
+    margin-right: 0;
+    margin-top: 1rem;
+  }
+  #summary > div:first-child {
+    margin-top: 0;
+  }
+}
+
+.summary-total {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+.summary-passed {
+  color: var(--success);
+  border-left: 0.4rem solid var(--success);
+  padding-left: 0.5rem;
+  margin-bottom: 0.15rem;
+}
+.summary-failed,
+.summary-obsolete-snapshots {
+  color: var(--danger);
+  border-left: 0.4rem solid var(--danger);
+  padding-left: 0.5rem;
+  margin-bottom: 0.15rem;
+}
+.summary-pending {
+  color: var(--warning);
+  border-left: 0.4rem solid var(--warning);
+  padding-left: 0.5rem;
+  margin-bottom: 0.15rem;
+}
+.summary-empty {
+  color: var(--disabled);
+  border-left: 0.4rem solid var(--disabled);
+  margin-bottom: 0.15rem;
+}
+
+.test-result {
+  padding: 1rem;
+  margin-bottom: 0.25rem;
+}
+.test-result:last-child {
+  border: 0;
+}
+.test-result.passed {
+  background-color: var(--success-bright);
+  color: var(--success);
+}
+.test-result.failed {
+  background-color: var(--danger-bright);
+  color: var(--danger);
+}
+.test-result.pending {
+  background-color: var(--warning-bright);
+  color: var(--warning);
+}
+
+.test-info {
+  display: flex;
+  justify-content: space-between;
+}
+.test-suitename {
+  width: 20%;
+  text-align: left;
+  font-weight: bold;
+  word-break: break-word;
+}
+.test-title {
+  width: 40%;
+  text-align: left;
+  font-style: italic;
+}
+.test-status {
+  width: 20%;
+  text-align: right;
+}
+.test-duration {
+  width: 10%;
+  text-align: right;
+  font-size: 0.85rem;
+}
+
+.failureMessages {
+  padding: 0 1rem;
+  margin-top: 1rem;
+  border-top: 1px dashed var(--danger);
+}
+.failureMessages.suiteFailure {
+  border-top: none;
+}
+.failureMsg {
+  white-space: pre-wrap;
+  white-space: -moz-pre-wrap;
+  white-space: -pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;
+}
+
+.suite-container {
+  margin-bottom: 1rem;
+}
+.suite-info {
+  padding: 1rem;
+  background-color: var(--panel);
+  color: var(--text-secondary);
+  border: 0.15rem solid;
+  border-color: var(--panel);
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+.suite-info:hover {
+  border-color: var(--border);
+  cursor: pointer;
+}
+.suite-info .suite-path {
+  word-break: break-all;
+  flex-grow: 1;
+  font-family: monospace;
+  font-size: 1rem;
+}
+.suite-info .suite-time {
+  margin-left: 1rem;
+  padding: 0.2rem 0.3rem;
+  font-size: 0.85rem;
+}
+.suite-info .suite-time.warn {
+  background-color: var(--danger);
+  color: #fff;
+}
+.suite-info:before {
+  content: "\2303";
+  display: inline-block;
+  margin-right: 1rem;
+  transform: rotate(180deg) translateY(0.15rem);
+}
+.suite-container[open] .suite-info:before {
+  transform: rotate(0deg) translateY(0.15rem);
+}
+
+/* CONSOLE LOGS */
+.suite-consolelog {
+  margin-bottom: 0.25rem;
+  padding: 1rem;
+  background-color: var(--panel);
+}
+.suite-consolelog-header {
+  font-weight: bold;
+}
+.suite-consolelog-item {
+  padding: 0.5rem;
+}
+.suite-consolelog-item pre {
+  margin: 0.5rem 0;
+  white-space: pre-wrap;
+  white-space: -moz-pre-wrap;
+  white-space: -pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;
+}
+.suite-consolelog-item-origin {
+  color: var(--text-secondary);
+  font-weight: bold;
+}
+.suite-consolelog-item-message {
+  color: var(--text-primary);
+  font-size: 1rem;
+  padding: 0 0.5rem;
+}
+
+/* OBSOLETE SNAPSHOTS */
+.suite-obsolete-snapshots {
+  margin-bottom: 0.25rem;
+  padding: 1rem;
+  background-color: var(--danger-bright);
+  color: var(--danger);
+}
+.suite-obsolete-snapshots-header {
+  font-weight: bold;
+}
+.suite-obsolete-snapshots-item {
+  padding: 0.5rem;
+}
+.suite-obsolete-snapshots-item pre {
+  margin: 0.5rem 0;
+  white-space: pre-wrap;
+  white-space: -moz-pre-wrap;
+  white-space: -pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;
+}
+.suite-obsolete-snapshots-item-message {
+  color: var(--text-primary);
+  font-size: 1rem;
+  padding: 0 0.5rem;
+}
+</style></head><body><main class="jesthtml-content"><header><h1 id="title">Agent Hub Unit Tests</h1></header><section id="metadata-container"><div id="timestamp">Started: 2026-04-06 22:50:38</div><div id="summary"><div id="suite-summary"><div class="summary-total">Suites (1)</div><div class="summary-passed  summary-empty">0 passed</div><div class="summary-failed ">1 failed</div><div class="summary-pending  summary-empty">0 pending</div></div><div id="test-summary"><div class="summary-total">Tests (11)</div><div class="summary-passed ">2 passed</div><div class="summary-failed ">9 failed</div><div class="summary-pending  summary-empty">0 pending</div></div></div></section><details id="suite-1" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts</div><div class="suite-time">3.234s</div></summary><div class="suite-tests"><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - CLI Mode</div><div class="test-title">should send message via CLI</div><div class="test-status">failed</div><div class="test-duration">0.02s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.sendMessage is not a function
+    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:48:42)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - CLI Mode</div><div class="test-title">should handle CLI errors</div><div class="test-status">failed</div><div class="test-duration">0.003s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.sendMessage is not a function
+    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:62:34)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - CLI Mode</div><div class="test-title">should perform health check</div><div class="test-status">failed</div><div class="test-duration">0.004s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.healthCheck is not a function
+    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:74:42)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - HTTP Mode</div><div class="test-title">should send message via HTTP</div><div class="test-status">failed</div><div class="test-duration">0.005s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.sendMessage is not a function
+    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:101:42)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - HTTP Mode</div><div class="test-title">should handle HTTP errors</div><div class="test-status">failed</div><div class="test-duration">0.003s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.sendMessage is not a function
+    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:116:34)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - HTTP Mode</div><div class="test-title">should perform health check (HTTP always healthy)</div><div class="test-status">failed</div><div class="test-duration">0.004s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.healthCheck is not a function
+    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:123:42)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - Remote Mode</div><div class="test-title">should perform remote health check successfully</div><div class="test-status">failed</div><div class="test-duration">0.004s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.healthCheck is not a function
+    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:149:42)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - Remote Mode</div><div class="test-title">should detect disconnected tunnel</div><div class="test-status">failed</div><div class="test-duration">0.004s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.healthCheck is not a function
+    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:163:42)</pre></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">OpenClawService - Configuration</div><div class="test-title">should default to CLI mode</div><div class="test-status">passed</div><div class="test-duration">0.005s</div></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - Configuration</div><div class="test-title">should require token for HTTP mode</div><div class="test-status">failed</div><div class="test-duration">0.005s</div></div><div class="failureMessages"> <pre class="failureMsg">Error: expect(received).rejects.toThrow()
+
+Received promise resolved instead of rejected
+Resolved to value: {"OpenClawService": [Function mockConstructor], "default": {"OpenClawService": [Function mockConstructor]}}
+    at expect (/home/jlguo/agent-hub/node_modules/expect/build/index.js:2116:15)
+    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:190:17)
+    at Promise.finally.completed (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)
+    at new Promise (&lt;anonymous&gt;)
+    at callAsyncCircusFn (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)
+    at _callCircusTest (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)
+    at _runTest (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:947:3)
+    at /home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:849:7
+    at _runTestsForDescribeBlock (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:862:11)
+    at _runTestsForDescribeBlock (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
+    at run (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:761:3)
+    at runAndTransformResultsToJestFormat (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)
+    at jestAdapter (/home/jlguo/agent-hub/node_modules/jest-circus/build/runner.js:101:19)
+    at runTestInternal (/home/jlguo/agent-hub/node_modules/jest-runner/build/index.js:275:16)
+    at runTest (/home/jlguo/agent-hub/node_modules/jest-runner/build/index.js:343:7)</pre></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">OpenClawService - Configuration</div><div class="test-title">should accept HTTP mode with token</div><div class="test-status">passed</div><div class="test-duration">0.004s</div></div></div></div></details></main></body></html>
