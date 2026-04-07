@@ -22,16 +22,14 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - backend-data:/app/prisma
-    # Run as root initially to fix permissions, then drop to nodeuser
-    user: root
-    entrypoint: ["/bin/sh", "-c", "chown -R nodeuser:nodejs /app/prisma && chmod 777 /app/prisma && chmod 666 /app/prisma/*.db 2>/dev/null || true && exec su-exec nodeuser npm run dev"]
-    init: true
+    init: true  # Use init process to handle zombie processes
+    # Note: Container runs as nodeuser (UID 1001), volume permissions set in Dockerfile
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:4000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 30s
     restart: unless-stopped
     networks:
       - agent-hub-network
