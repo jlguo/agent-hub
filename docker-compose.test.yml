@@ -5,7 +5,7 @@ version: '3.8'
 # Safe to reset/destroy without affecting dev data
 
 services:
-  # Test Backend - uses test.db
+  # Test Backend - uses test.db (production build for speed and reliability)
   backend-test:
     build:
       context: .
