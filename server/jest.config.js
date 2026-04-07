@@ -27,6 +27,7 @@ export default {
   setupFilesAfterEnv: ['<rootDir>/server/src/test/setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/server/src/$1',
+    '^(\\.\\.?/.*)\\.js$': '$1',
   },
   transform: {
     '^.+\\.tsx?$': [

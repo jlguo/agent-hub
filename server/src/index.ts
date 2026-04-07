@@ -44,6 +44,7 @@ app.use(cors());
 app.use(express.json());
 
 import { OpenClawService } from './services/OpenClawService';
+import healthRemoteRouter from './routes/health-remote';
 
 // Health check endpoint
 app.get('/health', async (_req, res) => {
@@ -52,8 +53,6 @@ app.get('/health', async (_req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
   };
-
-  import healthRemoteRouter from './routes/health-remote';
 
   // Add OpenClaw service status (especially important for remote mode)
   try {
