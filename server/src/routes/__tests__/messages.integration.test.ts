@@ -54,7 +54,9 @@ describe('Messages API - GET /api/messages/rooms/:roomId', () => {
 
   it('should return empty array for room with no messages', async () => {
     await withTestDatabase(async () => {
-      const room = await prisma.room.create({ data: createTestRoomData({ name: 'test-room' }) });
+      const room = await prisma.room.create({
+        data: createTestRoomData({ name: 'test-room' }) as any,
+      });
 
       const response = await request(app).get(`/api/messages/rooms/${room.id}`).expect(200);
 
@@ -64,8 +66,12 @@ describe('Messages API - GET /api/messages/rooms/:roomId', () => {
 
   it('should return messages for room', async () => {
     await withTestDatabase(async () => {
-      const room = await prisma.room.create({ data: createTestRoomData({ name: 'test-room' }) });
-      const agent = await prisma.agent.create({ data: createTestAgentData({ id: 'family-mom' }) });
+      const room = await prisma.room.create({
+        data: createTestRoomData({ name: 'test-room' }) as any,
+      });
+      const agent = await prisma.agent.create({
+        data: createTestAgentData({ id: 'family-mom' }) as any,
+      });
 
       await prisma.message.create({
         data: {
@@ -86,7 +92,9 @@ describe('Messages API - GET /api/messages/rooms/:roomId', () => {
 
   it('should include agent information in messages', async () => {
     await withTestDatabase(async () => {
-      const room = await prisma.room.create({ data: createTestRoomData({ name: 'test-room' }) });
+      const room = await prisma.room.create({
+        data: createTestRoomData({ name: 'test-room' }) as any,
+      });
       const agent = await prisma.agent.create({
         data: {
           ...createTestAgentData({ id: 'family-dad', name: 'Dad' }),
@@ -118,7 +126,9 @@ describe('Messages API - GET /api/messages/rooms/:roomId', () => {
 
   it('should respect limit parameter', async () => {
     await withTestDatabase(async () => {
-      const room = await prisma.room.create({ data: createTestRoomData({ name: 'test-room' }) });
+      const room = await prisma.room.create({
+        data: createTestRoomData({ name: 'test-room' }) as any,
+      });
 
       // Create 10 messages
       for (let i = 0; i < 10; i++) {
@@ -149,7 +159,9 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
 
   it('should create human message successfully', async () => {
     await withTestDatabase(async () => {
-      const room = await prisma.room.create({ data: createTestRoomData({ name: 'test-room' }) });
+      const room = await prisma.room.create({
+        data: createTestRoomData({ name: 'test-room' }) as any,
+      });
 
       const response = await request(app)
         .post(`/api/rooms/${room.id}/messages`)
@@ -167,7 +179,9 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
 
   it('should create agent message successfully', async () => {
     await withTestDatabase(async () => {
-      const room = await prisma.room.create({ data: createTestRoomData({ name: 'test-room' }) });
+      const room = await prisma.room.create({
+        data: createTestRoomData({ name: 'test-room' }) as any,
+      });
       const agent = await prisma.agent.create({
         data: createTestAgentData({ id: 'family-mom', name: 'Mom' }),
       });
@@ -189,7 +203,9 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
 
   it('should return 400 if content is missing', async () => {
     await withTestDatabase(async () => {
-      const room = await prisma.room.create({ data: createTestRoomData({ name: 'test-room' }) });
+      const room = await prisma.room.create({
+        data: createTestRoomData({ name: 'test-room' }) as any,
+      });
 
       const response = await request(app)
         .post(`/api/rooms/${room.id}/messages`)
@@ -211,8 +227,12 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
 
   it('should trigger agent response for human message', async () => {
     await withTestDatabase(async () => {
-      const room = await prisma.room.create({ data: createTestRoomData({ name: 'test-room' }) });
-      await prisma.agent.create({ data: createTestAgentData({ id: 'family-mom', name: 'Mom' }) });
+      const room = await prisma.room.create({
+        data: createTestRoomData({ name: 'test-room' }) as any,
+      });
+      await prisma.agent.create({
+        data: createTestAgentData({ id: 'family-mom', name: 'Mom' }) as any,
+      });
 
       // Mock OpenClawService to avoid actual CLI calls
       jest.mock('../services/OpenClawService', () => ({
@@ -240,8 +260,12 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
 
   it('should trigger discussion for /discuss command', async () => {
     await withTestDatabase(async () => {
-      const room = await prisma.room.create({ data: createTestRoomData({ name: 'test-room' }) });
-      await prisma.agent.create({ data: createTestAgentData({ id: 'family-mom', name: 'Mom' }) });
+      const room = await prisma.room.create({
+        data: createTestRoomData({ name: 'test-room' }) as any,
+      });
+      await prisma.agent.create({
+        data: createTestAgentData({ id: 'family-mom', name: 'Mom' }) as any,
+      });
 
       const response = await request(app)
         .post(`/api/rooms/${room.id}/messages`)
@@ -260,7 +284,9 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
 
   it('should handle empty content gracefully', async () => {
     await withTestDatabase(async () => {
-      const room = await prisma.room.create({ data: createTestRoomData({ name: 'test-room' }) });
+      const room = await prisma.room.create({
+        data: createTestRoomData({ name: 'test-room' }) as any,
+      });
 
       const response = await request(app)
         .post(`/api/rooms/${room.id}/messages`)
@@ -285,7 +311,9 @@ describe('Messages API - Error Handling', () => {
     // This test verifies error handling when DB is unavailable
     // In real scenarios, this would test connection failures
     await withTestDatabase(async () => {
-      const room = await prisma.room.create({ data: createTestRoomData({ name: 'test-room' }) });
+      const room = await prisma.room.create({
+        data: createTestRoomData({ name: 'test-room' }) as any,
+      });
 
       const response = await request(app).get(`/api/messages/rooms/${room.id}`).expect(200);
 
@@ -312,7 +340,9 @@ describe('Messages API - Message Transformation', () => {
 
   it('should transform agent messages with agent info', async () => {
     await withTestDatabase(async () => {
-      const room = await prisma.room.create({ data: createTestRoomData({ name: 'test-room' }) });
+      const room = await prisma.room.create({
+        data: createTestRoomData({ name: 'test-room' }) as any,
+      });
       const agent = await prisma.agent.create({
         data: {
           ...createTestAgentData({ id: 'family-bro', name: 'Bro' }),
@@ -341,7 +371,9 @@ describe('Messages API - Message Transformation', () => {
 
   it('should handle messages without agent (human messages)', async () => {
     await withTestDatabase(async () => {
-      const room = await prisma.room.create({ data: createTestRoomData({ name: 'test-room' }) });
+      const room = await prisma.room.create({
+        data: createTestRoomData({ name: 'test-room' }) as any,
+      });
 
       await prisma.message.create({
         data: {
@@ -373,7 +405,9 @@ describe('Messages API - Performance', () => {
 
   it('should handle large message sets efficiently', async () => {
     await withTestDatabase(async () => {
-      const room = await prisma.room.create({ data: createTestRoomData({ name: 'test-room' }) });
+      const room = await prisma.room.create({
+        data: createTestRoomData({ name: 'test-room' }) as any,
+      });
 
       // Create 100 messages
       const messages = Array.from({ length: 100 }, (_, i) => ({
