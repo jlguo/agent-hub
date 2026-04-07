@@ -9,6 +9,7 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { Agent, Room, Relationship, Message } from '@prisma/client';
 
 const execAsync = promisify(exec);
 
@@ -136,7 +137,9 @@ export function suppressConsole(): { restore: () => void } {
 /**
  * Create a test agent data object
  */
-export function createTestAgentData(overrides: Partial<any> = {}): any {
+export function createTestAgentData(
+  overrides: Partial<Agent> = {}
+): Omit<Agent, 'createdAt' | 'updatedAt' | 'roomId'> & { roomId?: string } {
   return {
     id: `agent_${Date.now()}`,
     name: `Test Agent ${Date.now()}`,
@@ -145,18 +148,28 @@ export function createTestAgentData(overrides: Partial<any> = {}): any {
     empathy: 5,
     curiosity: 5,
     avatar: '🤖',
+    isActive: true,
+    responseDelay: 1000,
+    systemPrompt: null,
     ...overrides,
   };
 }
 
 /**
- * Create a test room data object
+ * Create test room data
  */
-export function createTestRoomData(overrides: Partial<any> = {}): any {
+export function createTestRoomData(
+  overrides: Partial<Room> = {}
+): Omit<Room, 'createdAt' | 'updatedAt'> {
   return {
     id: `room_${Date.now()}`,
     name: `Test Room ${Date.now()}`,
-    settings: '{}',
+    type: 'family',
+    description: null,
+    context: null,
+    externalChatId: null,
+    openclawSessionId: null,
+    sessionMaxAge: null,
     ...overrides,
   };
 }

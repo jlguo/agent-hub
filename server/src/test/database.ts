@@ -7,7 +7,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Agent, Room, Relationship } from '@prisma/client';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
@@ -101,9 +101,9 @@ export async function withTestDatabase<T>(testFn: () => Promise<T>): Promise<T> 
  * Seed test database with minimal required data
  */
 export async function seedTestDatabase(seedData: {
-  rooms?: Record<string, unknown>[];
-  agents?: Record<string, unknown>[];
-  relationships?: Record<string, unknown>[];
+  rooms?: Partial<Room>[];
+  agents?: Partial<Agent>[];
+  relationships?: Partial<Relationship>[];
 }): Promise<void> {
   const prisma = getTestPrismaClient();
 
@@ -112,7 +112,7 @@ export async function seedTestDatabase(seedData: {
     if (seedData.rooms) {
       for (const room of seedData.rooms) {
         await prisma.room.create({
-          data: room,
+          data: room as any, // Type assertion for flexibility
         });
       }
     }
@@ -121,7 +121,7 @@ export async function seedTestDatabase(seedData: {
     if (seedData.agents) {
       for (const agent of seedData.agents) {
         await prisma.agent.create({
-          data: agent,
+          data: agent as any, // Type assertion for flexibility
         });
       }
     }
@@ -130,7 +130,7 @@ export async function seedTestDatabase(seedData: {
     if (seedData.relationships) {
       for (const relationship of seedData.relationships) {
         await prisma.relationship.create({
-          data: relationship,
+          data: relationship as any, // Type assertion for flexibility
         });
       }
     }
