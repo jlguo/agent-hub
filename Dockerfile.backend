@@ -44,8 +44,8 @@ RUN mkdir -p /app/prisma && chown -R nodeuser:nodejs /app/prisma
 USER nodeuser
 WORKDIR /app
 
-# Initialize database with correct permissions (create empty DB file if needed)
-RUN touch /app/prisma/dev.db && chown nodeuser:nodejs /app/prisma/dev.db || true
+# Note: Database file will be created at runtime with correct permissions
+# Volume mounts in docker-compose.yml handle persistence
 
 # Expose port
 EXPOSE 4000
