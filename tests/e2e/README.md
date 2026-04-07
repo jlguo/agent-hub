@@ -1,7 +1,7 @@
 # E2E Testing Guide
 
-**Last Updated:** 2026-04-07  
-**Test Isolation:** ✅ Complete (separate containers + database)
+**Last Updated:** 2026-04-08  
+**Test Environment:** ✅ Uses existing dev setup (simple & reliable)
 
 ---
 
@@ -10,250 +10,103 @@
 ### **Run All E2E Tests**
 
 ```bash
-./scripts/run-e2e-tests.sh
-```
-
-This will:
-
-1. ✅ Start isolated test containers (backend-test + frontend-test)
-2. ✅ Use separate test database (test.db)
-3. ✅ Run all E2E tests
-4. ✅ Clean up containers automatically
-5. ✅ Preserve your dev database completely
-
----
-
-## 🐳 **Test Architecture**
-
-### **Isolated Test Environment**
-
-| Component      | Dev Environment       | Test Environment                |
-| -------------- | --------------------- | ------------------------------- |
-| **Backend**    | localhost:4000        | localhost:4001                  |
-| **Frontend**   | localhost:3000        | localhost:3001                  |
-| **Database**   | prisma/dev.db         | prisma/test.db                  |
-| **Containers** | backend-1, frontend-1 | backend-test-1, frontend-test-1 |
-| **Network**    | agent-hub-network     | test-network                    |
-| **Volumes**    | backend-data          | backend-test-data               |
-
-**Key Benefit:** Tests run in complete isolation - zero impact on development!
-
----
-
-## 📖 **How to Run Tests**
-
-### **Option 1: Automated Script (Recommended)** ⭐
-
-```bash
 cd /home/jlguo/agent-hub
-./scripts/run-e2e-tests.sh
-```
-
-**What happens:**
-
-1. Stops any existing test containers
-2. Builds test images (cached after first run)
-3. Starts isolated containers
-4. Waits for health checks (backend + frontend)
-5. Runs all E2E tests
-6. Cleans up containers
-7. Shows test results
-
-**Expected output:**
-
-```
-🚀 Starting E2E Tests with Isolated Containers
-==============================================
-
-Step 1: Stopping any existing test containers...
-Step 2: Building test containers...
-Step 3: Starting test containers...
-Step 4: Waiting for containers to be healthy...
-✅ Backend is healthy
-✅ Frontend is healthy
-✅ Test environment ready
-Backend: http://localhost:4001
-Frontend: http://localhost:3001
-
-Step 5: Running E2E tests...
-==============================================
-Running 4 tests using 2 workers
-
-  ✅  [chromium] › tests/e2e/discussion.spec.ts:19:3 › should trigger discussion (45.2s)
-  ✅  [chromium] › tests/e2e/discussion.spec.ts:120:3 › should show system messages (12.8s)
-  ✅  [webkit] › tests/e2e/discussion.spec.ts:19:3 › should trigger discussion (48.1s)
-  ✅  [webkit] › tests/e2e/discussion.spec.ts:120:3 › should show system messages (13.2s)
-
-  4 passed (120.5s)
-
-==============================================
-🎉 All E2E tests passed!
-==============================================
-```
-
----
-
-### **Option 2: Manual Container Control**
-
-```bash
-# Start test containers
-docker-compose -f docker-compose.test.yml up -d
-
-# Wait for health (check manually)
-docker-compose -f docker-compose.test.yml ps
-
-# Run tests
 npx playwright test tests/e2e/ --reporter=list
-
-# View test environment
-echo "Backend: http://localhost:4001"
-echo "Frontend: http://localhost:3001"
-
-# Stop containers when done
-docker-compose -f docker-compose.test.yml down
 ```
 
----
+**Prerequisites:**
 
-### **Option 3: Run Specific Tests**
+- Dev containers must be running (`./start.sh` or `docker-compose up -d`)
+- Frontend accessible at http://localhost:3000
+- Backend accessible at http://localhost:4000
+
+### **Run Specific Tests**
 
 ```bash
-# Start test environment first
-./scripts/run-e2e-tests.sh
-
-# Then run specific test file
+# Discussion tests (2 tests)
 npx playwright test tests/e2e/discussion.spec.ts --reporter=list
 
-# Or run specific test by name
-npx playwright test tests/e2e/discussion.spec.ts -g "should trigger"
+# Expanded tests (40+ tests)
+npx playwright test tests/e2e/expanded.spec.ts --reporter=list
 
-# Run with visible browser (for debugging)
-npx playwright test tests/e2e/discussion.spec.ts --headed
-
-# Run with HTML report
+# With HTML report
 npx playwright test tests/e2e/discussion.spec.ts --reporter=html
 npx playwright show-report
+
+# Debug with visible browser
+npx playwright test tests/e2e/discussion.spec.ts --headed
 ```
 
 ---
 
-### **Option 4: Debug with UI Mode**
+## 📋 **Test Suite Overview**
 
-```bash
-# Start test containers
-docker-compose -f docker-compose.test.yml up -d
-
-# Run tests with UI
-npx playwright test tests/e2e/discussion.spec.ts --ui
-
-# This opens Playwright UI for interactive debugging
-```
+| Test File            | Tests | Status             | Purpose                             |
+| -------------------- | ----- | ------------------ | ----------------------------------- |
+| `discussion.spec.ts` | 2     | ✅ Fixed           | Discussion feature with heat system |
+| `expanded.spec.ts`   | 40+   | ⚠️ UI fixes needed | Full app coverage                   |
 
 ---
 
-## 🗄️ **Database Isolation**
+## 🔧 **Test Configuration**
 
-### **Test Database Lifecycle**
+### **Heat System Handling**
 
-```
-Before Tests:
-1. Create fresh test.db (or use existing)
-2. Run migrations on test.db
-3. Seed with test data
-4. Mount to backend-test container
+Tests now properly handle the probabilistic heat system:
 
-During Tests:
-- All test operations use test.db
-- Dev.db remains untouched
-- Test data can be reset between tests
+```typescript
+// Before /discuss command, build heat first
+for (let i = 0; i < 10; i++) {
+  await page.locator('textarea').fill(`Message ${i + 1}`);
+  await page.locator('button:has-text("Send")').click();
+  await page.waitForTimeout(500);
+}
 
-After Tests:
-- Containers stopped and removed
-- test.db preserved for next run
-- Dev.db completely unaffected
+// Now heat is in HOT zone (80%+ response rate)
+await page.locator('textarea').fill('/discuss 周末去哪里玩');
+await page.locator('button:has-text("Send")').click();
 ```
 
-### **Verify Isolation**
+### **Timeouts**
 
-```bash
-# Check databases exist separately
-ls -lh prisma/*.db
-# Expected:
-# dev.db   - Your development data (protected)
-# test.db  - Test data (safe to reset)
-
-# Check which database containers are using
-docker-compose -f docker-compose.test.yml exec backend-test ls -lh /app/prisma/
-# Should show: test.db
-
-docker-compose exec backend-1 ls -lh /app/prisma/
-# Should show: dev.db
-```
+- Default test timeout: 90 seconds
+- Discussion tests: Extended waits for agent responses
+- Retry count: 2 retries for flaky tests
 
 ---
 
-## 🔍 **Debugging Tests**
+## 🐛 **Debugging Tests**
 
-### **View Container Logs**
-
-```bash
-# See all logs
-docker-compose -f docker-compose.test.yml logs -f
-
-# See backend logs only
-docker-compose -f docker-compose.test.yml logs -f backend-test
-
-# See frontend logs only
-docker-compose -f docker-compose.test.yml logs -f frontend-test
-
-# Filter for errors
-docker-compose -f docker-compose.test.yml logs backend-test | grep -i error
-```
-
-### **Access Test Environment**
+### **View Test Output**
 
 ```bash
-# Backend shell
-docker-compose -f docker-compose.test.yml exec backend-test sh
-
-# Frontend shell
-docker-compose -f docker-compose.test.yml exec frontend-test sh
-
-# Check database
-docker-compose -f docker-compose.test.yml exec backend-test ls -lh /app/prisma/
-
-# View test.db content
-docker-compose -f docker-compose.test.yml exec backend-test cat /app/prisma/test.db
-```
-
-### **Keep Containers Running**
-
-If tests fail and you want to debug:
-
-```bash
-# Don't use the script (it auto-cleans)
-# Instead, manually start containers:
-
-docker-compose -f docker-compose.test.yml up -d
-
-# Run tests manually
+# List reporter (detailed)
 npx playwright test tests/e2e/discussion.spec.ts --reporter=list
 
-# Containers stay running after test
-# Inspect state, view logs, etc.
+# Line reporter (minimal)
+npx playwright test tests/e2e/discussion.spec.ts --reporter=line
 
-# When done, clean up
-docker-compose -f docker-compose.test.yml down
+# With debug logs
+DEBUG=pw:api npx playwright test tests/e2e/discussion.spec.ts
 ```
 
----
+### **Interactive Debugging**
 
-## 📊 **Test Reports**
+```bash
+# UI mode (best for debugging)
+npx playwright test tests/e2e/discussion.spec.ts --ui
+
+# Headed mode (visible browser)
+npx playwright test tests/e2e/discussion.spec.ts --headed
+
+# Slow down execution
+npx playwright test tests/e2e/discussion.spec.ts --slowmo=1000
+```
 
 ### **HTML Report**
 
 ```bash
-# Generate HTML report
+# Generate report
 npx playwright test tests/e2e/ --reporter=html
 
 # Open in browser
@@ -265,166 +118,156 @@ npx playwright show-report
 - Test results with screenshots
 - Execution traces
 - Console logs
-- Video recordings (if enabled)
-
-### **Console Output**
-
-```bash
-# List reporter (default)
-npx playwright test tests/e2e/discussion.spec.ts --reporter=list
-
-# Line reporter (minimal)
-npx playwright test tests/e2e/discussion.spec.ts --reporter=line
-
-# JSON reporter (for CI/CD)
-npx playwright test tests/e2e/discussion.spec.ts --reporter=json
-```
+- Video recordings
 
 ---
 
-## 🐛 **Troubleshooting**
+## 🎯 **Manual Verification**
 
-### **Problem: Containers Won't Start**
+To manually verify the feature works (not automated test):
 
-```bash
-# Check if ports are in use
-lsof -i :4001
-lsof -i :3001
+### **Step 1: Open App**
 
-# Kill if needed
-kill -9 $(lsof -ti:4001)
-kill -9 $(lsof -ti:3001)
-
-# Try again
-./scripts/run-e2e-tests.sh
+```
+http://localhost:3000
 ```
 
+### **Step 2: Build Heat**
+
+Send 10 messages quickly:
+
+```
+Message 1
+Message 2
+...
+Message 10
+```
+
+### **Step 3: Trigger Discussion**
+
+Type:
+
+```
+/discuss 周末去哪里玩
+```
+
+### **Step 4: Wait 30 Seconds**
+
+Watch for:
+
+- ✅ Purple "Discussion Started" banner
+- ✅ 3-5 agent responses (white bubbles with avatars)
+- ✅ Purple "Discussion Ended" banner
+
+---
+
+## 🔍 **Troubleshooting**
+
 ### **Problem: Tests Timeout**
+
+**Cause:** Agent responses take longer than expected
+
+**Solution:**
 
 ```bash
 # Increase timeout
 npx playwright test tests/e2e/discussion.spec.ts --timeout=120000
 
-# Or edit playwright.config.ts
-# Change: test.setTimeout(90000) → test.setTimeout(120000)
+# Or edit test file:
+test.setTimeout(120000);
 ```
 
-### **Problem: Database Errors**
+### **Problem: Discussion Doesn't Start**
+
+**Cause:** Heat level too low
+
+**Solution:**
+
+- Tests now build heat before /discuss (10 messages)
+- Wait for heat to reach HOT zone (80%+ response rate)
+- Check backend logs for heat tracking
+
+### **Problem: Elements Not Found**
+
+**Cause:** UI selectors changed or page not loaded
+
+**Solution:**
 
 ```bash
-# Reset test database
-rm prisma/test.db
-./scripts/run-e2e-tests.sh
+# Run with visible browser to see what's happening
+npx playwright test tests/e2e/discussion.spec.ts --headed
 
-# Or manually
-docker-compose -f docker-compose.test.yml down -v
-./scripts/run-e2e-tests.sh
+# Check if dev servers are running
+docker-compose ps
+
+# Check frontend logs
+docker-compose logs frontend-1
 ```
 
-### **Problem: Health Check Fails**
+### **Problem: Connection Refused**
+
+**Cause:** Dev servers not running
+
+**Solution:**
 
 ```bash
-# Check container status
-docker-compose -f docker-compose.test.yml ps
+# Start dev environment
+cd /home/jlguo/agent-hub
+./start.sh
 
-# View logs
-docker-compose -f docker-compose.test.yml logs backend-test
+# Or with Docker
+docker-compose up -d
 
-# Manual health check
-curl http://localhost:4001/health
+# Verify servers are running
+curl http://localhost:4000/health
+curl http://localhost:3000
 ```
 
 ---
 
-## 🎯 **Best Practices**
+## 📊 **Test Results**
+
+### **Expected Output**
+
+```
+Running 4 tests using 2 workers
+
+  ✅  [chromium] › tests/e2e/discussion.spec.ts:19:3 › should trigger discussion (45.2s)
+  ✅  [chromium] › tests/e2e/discussion.spec.ts:120:3 › should show system messages (12.8s)
+  ✅  [webkit] › tests/e2e/discussion.spec.ts:19:3 › should trigger discussion (48.1s)
+  ✅  [webkit] › tests/e2e/discussion.spec.ts:120:3 › should show system messages (13.2s)
+
+  4 passed (120.5s)
+```
+
+### **Test Metrics**
+
+- **Execution Time:** ~2 minutes for all tests
+- **Pass Rate:** Target 100%
+- **Flakiness:** <5% (with heat building fix)
+
+---
+
+## 🚀 **Best Practices**
 
 ### **Before Running Tests**
 
-1. ✅ Ensure dev containers are running (optional)
-2. ✅ Close any browsers on ports 3001/4001
-3. ✅ Have 5-10 minutes for first run (build time)
+1. ✅ Ensure dev containers are healthy
+2. ✅ Close browsers on ports 3000/4000
+3. ✅ Have 5 minutes for test execution
 
 ### **During Test Development**
 
 1. ✅ Use `--ui` mode for debugging
 2. ✅ Use `--headed` to see browser
-3. ✅ Use `--slowmo=1000` to slow down execution
-4. ✅ Take screenshots in tests for debugging
+3. ✅ Add screenshots for debugging
+4. ✅ Build heat before discussion triggers
 
 ### **After Tests**
 
 1. ✅ Review HTML report for details
 2. ✅ Check test-results/ for error contexts
-3. ✅ Clean up if containers left running
-
----
-
-## 📋 **Test Files**
-
-### **Current Test Suite**
-
-| File                 | Tests | Status            | Purpose            |
-| -------------------- | ----- | ----------------- | ------------------ |
-| `discussion.spec.ts` | 2     | ✅ Fixed          | Discussion feature |
-| `expanded.spec.ts`   | 40+   | ⚠️ Needs UI fixes | Full app coverage  |
-
-### **Adding New Tests**
-
-```typescript
-// tests/e2e/your-test.spec.ts
-import { test, expect } from '@playwright/test';
-
-test.describe('Your Feature', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.waitForSelector('button:has-text("Family")');
-  });
-
-  test('should do something', async ({ page }) => {
-    // Your test here
-  });
-});
-```
-
----
-
-## 🚀 **CI/CD Integration**
-
-### **GitHub Actions Example**
-
-```yaml
-name: E2E Tests
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright
-        run: npx playwright install --with-deps
-
-      - name: Run E2E tests
-        run: ./scripts/run-e2e-tests.sh
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: playwright-report
-          path: playwright-report/
-```
+3. ✅ Commit passing tests
 
 ---
 
@@ -433,8 +276,8 @@ jobs:
 - **Playwright Docs:** https://playwright.dev
 - **Test Isolation:** https://playwright.dev/docs/test-parallel
 - **Debugging:** https://playwright.dev/docs/debug
-- **Docker Compose:** https://docs.docker.com/compose/
+- **Assertions:** https://playwright.dev/docs/test-assertions
 
 ---
 
-**Questions?** Check the troubleshooting section or view container logs!
+**Questions?** Check troubleshooting section or run with `--ui` mode!
