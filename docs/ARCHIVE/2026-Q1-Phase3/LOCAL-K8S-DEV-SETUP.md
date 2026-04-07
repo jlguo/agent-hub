@@ -13,6 +13,7 @@
 **Download**: https://www.docker.com/products/docker-desktop/
 
 **Installation**:
+
 ```bash
 # macOS
 brew install --cask docker
@@ -25,6 +26,7 @@ brew install --cask docker
 ```
 
 **Configuration**:
+
 1. Open Docker Desktop
 2. Go to Settings → Kubernetes
 3. ✅ Enable Kubernetes
@@ -35,6 +37,7 @@ brew install --cask docker
 5. Click "Apply & Restart"
 
 **Verify**:
+
 ```bash
 kubectl version --client
 kubectl cluster-info
@@ -45,21 +48,25 @@ kubectl get nodes
 ### 2. Helm Installation
 
 **macOS**:
+
 ```bash
 brew install helm
 ```
 
 **Windows**:
+
 ```bash
 choco install kubernetes-helm
 ```
 
 **Linux**:
+
 ```bash
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 ```
 
 **Verify**:
+
 ```bash
 helm version
 # Should show: version.BuildInfo{Version:"v3.x.x", ...}
@@ -124,15 +131,15 @@ cd /home/jlguo/agent-hub
 # Add to .gitignore
 
 secrets:
-  FEISHU_APP_ID: "cli_xxx"
-  FEISHU_APP_SECRET: "xxx"
-  FEISHU_CHAT_ID: "oc_xxx"
-  FEISHU_VERIFY_TOKEN: "xxx"
-  OPENCLAW_VERIFICATION_TOKEN: "xxx"
-  JWT_SECRET: "local-dev-jwt-secret-min-32-characters-long"
-  ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-  API_KEY: "local-api-key"
-  SENTRY_DSN: ""  # Optional for local dev
+  FEISHU_APP_ID: 'cli_xxx'
+  FEISHU_APP_SECRET: 'xxx'
+  FEISHU_CHAT_ID: 'oc_xxx'
+  FEISHU_VERIFY_TOKEN: 'xxx'
+  OPENCLAW_VERIFICATION_TOKEN: 'xxx'
+  JWT_SECRET: 'local-dev-jwt-secret-min-32-characters-long'
+  ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+  API_KEY: 'local-api-key'
+  SENTRY_DSN: '' # Optional for local dev
 ```
 
 ### 3. Install Helm Chart (Local Dev)
@@ -226,7 +233,7 @@ Instead of rebuilding images for every change, use local volume mounts:
 
 ```yaml
 # Development-specific overrides
-replicaCount: 1  # Single replica for dev
+replicaCount: 1 # Single replica for dev
 
 image:
   backend:
@@ -237,24 +244,25 @@ image:
 # Mount local source code as volumes
 backend:
   volumeMounts:
-  - name: source-code
-    mountPath: /app/server
-  extraArgs: ["npm", "run", "dev"]  # Use tsx watch for hot reload
+    - name: source-code
+      mountPath: /app/server
+  extraArgs: ['npm', 'run', 'dev'] # Use tsx watch for hot reload
 
 frontend:
   volumeMounts:
-  - name: source-code
-    mountPath: /app/client
-  extraArgs: ["npm", "run", "dev"]  # Next.js dev server
+    - name: source-code
+      mountPath: /app/client
+  extraArgs: ['npm', 'run', 'dev'] # Next.js dev server
 
 volumes:
-- name: source-code
-  hostPath:
-    path: /home/jlguo/agent-hub
-    type: Directory
+  - name: source-code
+    hostPath:
+      path: /home/jlguo/agent-hub
+      type: Directory
 ```
 
 **Install with hot reload**:
+
 ```bash
 helm upgrade agent-hub-dev . \
   --namespace agent-hub-dev \
@@ -264,6 +272,7 @@ helm upgrade agent-hub-dev . \
 ```
 
 **Now**:
+
 - Edit backend code → Auto-restarts (tsx watch)
 - Edit frontend code → Auto-refreshes (Next.js Fast Refresh)
 - No need to rebuild images!
@@ -574,20 +583,20 @@ cat /etc/hosts | grep agent-hub
 backend:
   resources:
     requests:
-      cpu: "50m"
-      memory: "128Mi"
+      cpu: '50m'
+      memory: '128Mi'
     limits:
-      cpu: "200m"
-      memory: "256Mi"
+      cpu: '200m'
+      memory: '256Mi'
 
 frontend:
   resources:
     requests:
-      cpu: "25m"
-      memory: "64Mi"
+      cpu: '25m'
+      memory: '64Mi'
     limits:
-      cpu: "100m"
-      memory: "128Mi"
+      cpu: '100m'
+      memory: '128Mi'
 ```
 
 ### Use Lightweight Images
@@ -695,6 +704,7 @@ docker build --cache-from agent-hub-backend:dev -t agent-hub-backend:dev .
 **Ready to start developing locally?** The Helm chart makes it easy to install, upgrade, and manage your local Kubernetes deployment. Once everything works locally, deploy to production with `values-production.yaml`!
 
 Would you like me to:
+
 - **A)** Create the complete Helm chart structure?
 - **B)** Set up Docker Desktop Kubernetes (step-by-step together)?
 - **C)** Create values files for dev/staging/production?

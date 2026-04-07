@@ -246,7 +246,7 @@
   - Week 4: 80% (after E2E)
   - Final: 85% (enforced)
 
-  5.4 **Coverage Reports**
+    5.4 **Coverage Reports**
 
 - HTML reports (local)
 - JSON reports (CI)

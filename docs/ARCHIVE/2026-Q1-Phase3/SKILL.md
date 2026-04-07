@@ -17,11 +17,11 @@ description: >
   This skill validates test coverage, quality, and maintenance requirements.
 
 triggers:
-  - "new feature"
-  - "feature update"
-  - "bug fix"
-  - "PR created"
-  - "code change"
+  - 'new feature'
+  - 'feature update'
+  - 'bug fix'
+  - 'PR created'
+  - 'code change'
 
 requirements:
   - unit_tests_required: true
@@ -51,12 +51,14 @@ requirements:
 ```
 
 **Checklist**:
+
 - [ ] Unit tests for all new services/functions
 - [ ] Integration tests for API endpoints
 - [ ] E2E tests for critical user flows (if user-facing)
 - [ ] Ratio approximately 70/20/10
 
 **Validation**:
+
 ```bash
 # Count tests by type
 find . -name "*.test.ts" -path "*/__tests__/*" | wc -l  # Unit
@@ -69,12 +71,14 @@ find . -name "*.spec.ts" -path "*/e2e/*" | wc -l  # E2E
 ### Rule 2: Unit Test Requirements ✅
 
 **Required for**:
+
 - All new service methods
 - All utility functions
 - All middleware
 - All business logic
 
 **Template**:
+
 ```typescript
 // src/services/__tests__/NewService.test.ts
 import { NewService } from '../NewService';
@@ -90,10 +94,10 @@ describe('NewService', () => {
     it('should [expected behavior] when [condition]', async () => {
       // Arrange
       const input = 'test input';
-      
+
       // Act
       const result = await service.methodName(input);
-      
+
       // Assert
       expect(result).toBeDefined();
       expect(result).toEqual(expectedOutput);
@@ -105,14 +109,14 @@ describe('NewService', () => {
 
     it('should throw error when [invalid input]', async () => {
       // Test error handling
-      await expect(service.methodName(invalidInput))
-        .rejects.toThrow('Expected error message');
+      await expect(service.methodName(invalidInput)).rejects.toThrow('Expected error message');
     });
   });
 });
 ```
 
 **Naming Convention**:
+
 ```typescript
 // Format: should [expected behavior] when [condition]
 it('should select mentioned agent with 100% priority when @mention is present');
@@ -121,6 +125,7 @@ it('should throw ValidationError when message content is empty');
 ```
 
 **Checklist**:
+
 - [ ] Test file created next to source file
 - [ ] Describe blocks for each method
 - [ ] Multiple test cases per method (happy path + edge cases)
@@ -133,12 +138,14 @@ it('should throw ValidationError when message content is empty');
 ### Rule 3: Integration Test Requirements ✅
 
 **Required for**:
+
 - All new API endpoints
 - Database operations
 - External service integrations (OpenClaw, Feishu)
 - WebSocket events
 
 **Template**:
+
 ```typescript
 // tests/integration/api/newFeature.test.ts
 import request from 'supertest';
@@ -149,24 +156,32 @@ describe('New Feature API', () => {
     it('should create resource and return 201', async () => {
       const response = await request(app)
         .post('/api/new-endpoint')
-        .send({ /* test data */ })
+        .send({
+          /* test data */
+        })
         .expect(201);
-      
+
       expect(response.body.id).toBeDefined();
-      expect(response.body).toMatchObject({ /* expected shape */ });
+      expect(response.body).toMatchObject({
+        /* expected shape */
+      });
     });
 
     it('should validate input and return 400 for invalid data', async () => {
       await request(app)
         .post('/api/new-endpoint')
-        .send({ /* invalid data */ })
+        .send({
+          /* invalid data */
+        })
         .expect(400);
     });
 
     it('should require authentication', async () => {
       await request(app)
         .post('/api/new-endpoint')
-        .send({ /* data */ })
+        .send({
+          /* data */
+        })
         .expect(401);
     });
   });
@@ -174,6 +189,7 @@ describe('New Feature API', () => {
 ```
 
 **Checklist**:
+
 - [ ] Test file in `tests/integration/` directory
 - [ ] Uses Supertest for HTTP testing
 - [ ] Tests success and error cases
@@ -186,18 +202,21 @@ describe('New Feature API', () => {
 ### Rule 4: E2E Test Requirements (Conditional) ✅
 
 **Required when**:
+
 - New user-facing feature
 - Critical user flow changed
 - Multiple components interact
 - Cross-feature integration
 
 **Not required for**:
+
 - Backend-only changes
 - Refactoring without behavior change
 - Performance optimizations
 - Bug fixes with existing E2E coverage
 
 **Template**:
+
 ```typescript
 // tests/e2e/new-feature.spec.ts
 import { test, expect } from '@playwright/test';
@@ -206,14 +225,14 @@ test.describe('New Feature', () => {
   test('should complete critical user flow', async ({ page }) => {
     // 1. Navigate to feature
     await page.goto('http://localhost:3000/path');
-    
+
     // 2. Wait for page load
     await page.waitForSelector('.feature-container');
-    
+
     // 3. Perform user action
     await page.fill('input', 'test data');
     await page.click('button:has-text("Submit")');
-    
+
     // 4. Verify outcome
     await page.waitForSelector('.success-message', { timeout: 5000 });
     await expect(page.locator('.success-message')).toBeVisible();
@@ -226,6 +245,7 @@ test.describe('New Feature', () => {
 ```
 
 **Checklist**:
+
 - [ ] Test file in `tests/e2e/` directory
 - [ ] Tests critical user flow
 - [ ] Uses proper waits (no arbitrary timeouts)
@@ -238,6 +258,7 @@ test.describe('New Feature', () => {
 ### Rule 5: Code Coverage Requirements ✅
 
 **Minimum Coverage**:
+
 - Overall: 85%
 - Services: 90%
 - Middleware: 95%
@@ -245,6 +266,7 @@ test.describe('New Feature', () => {
 - Utilities: 80%
 
 **Validation**:
+
 ```bash
 # Run tests with coverage
 npm run test:coverage
@@ -254,6 +276,7 @@ npm run test:coverage:check
 ```
 
 **Configuration** (`jest.config.js`):
+
 ```javascript
 module.exports = {
   coverageThreshold: {
@@ -261,25 +284,26 @@ module.exports = {
       branches: 80,
       functions: 80,
       lines: 80,
-      statements: 80
+      statements: 80,
     },
     './src/services/': {
       branches: 90,
       functions: 90,
       lines: 90,
-      statements: 90
+      statements: 90,
     },
     './src/middleware/': {
       branches: 95,
       functions: 95,
       lines: 95,
-      statements: 95
-    }
-  }
+      statements: 95,
+    },
+  },
 };
 ```
 
 **Checklist**:
+
 - [ ] Coverage thresholds met
 - [ ] No critical paths uncovered
 - [ ] Coverage report reviewed
@@ -290,19 +314,21 @@ module.exports = {
 ### Rule 6: Mocking External Services ✅
 
 **Required for**:
+
 - OpenClaw API calls
 - Feishu API calls
 - Database operations (in unit tests)
 - Third-party services
 
 **Template**:
+
 ```typescript
 // tests/__mocks__/OpenClawService.ts
 export const mockOpenClawService = {
   sendMessage: jest.fn().mockResolvedValue({
     content: 'Mocked AI response',
-    usage: { totalTokens: 100, cost: 0.001 }
-  })
+    usage: { totalTokens: 100, cost: 0.001 },
+  }),
 };
 
 // In test file
@@ -318,6 +344,7 @@ describe('Feature using OpenClaw', () => {
 ```
 
 **Checklist**:
+
 - [ ] External services mocked in unit tests
 - [ ] Mocks defined in `tests/__mocks__/`
 - [ ] Mock responses realistic
@@ -329,12 +356,14 @@ describe('Feature using OpenClaw', () => {
 ### Rule 7: Test Data Management ✅
 
 **Requirements**:
+
 - Use factories for dynamic data
 - Use fixtures for static data
 - Reset database between tests
 - No hardcoded test data in test files
 
 **Template**:
+
 ```typescript
 // tests/factories/messageFactory.ts
 export function createMessage(overrides = {}) {
@@ -344,7 +373,7 @@ export function createMessage(overrides = {}) {
     senderType: 'human',
     roomId: 'test-room',
     createdAt: new Date(),
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -362,6 +391,7 @@ const message = createMessage({ content: 'Custom', senderType: 'agent' });
 ```
 
 **Checklist**:
+
 - [ ] Factories used for dynamic data
 - [ ] Fixtures used for static data
 - [ ] Database reset in `beforeEach`
@@ -373,12 +403,14 @@ const message = createMessage({ content: 'Custom', senderType: 'agent' });
 ### Rule 8: Test Documentation ✅
 
 **Required**:
+
 - README in `tests/` directory
 - Decision log for major test choices
 - Inline comments for complex test logic
 
 **Template** (`tests/README.md`):
-```markdown
+
+````markdown
 # Test Suite Documentation
 
 ## Running Tests
@@ -388,6 +420,7 @@ npm test              # All tests
 npm run test:unit     # Unit tests
 npm run test:e2e      # E2E tests
 ```
+````
 
 ## Test Structure
 
@@ -398,7 +431,8 @@ npm run test:e2e      # E2E tests
 ## Writing New Tests
 
 See docs/TEST-WRITING-RULES.md for standards.
-```
+
+````
 
 **Checklist**:
 - [ ] tests/README.md exists and up-to-date
@@ -428,9 +462,10 @@ describe.skip('Flaky: Agent Response Timing', () => {
 
 // Add to flaky tests tracker
 // docs/FLAKY-TESTS.md
-```
+````
 
 **Checklist**:
+
 - [ ] Flaky test identified and skipped
 - [ ] Issue created with investigation details
 - [ ] Root cause documented
@@ -442,12 +477,14 @@ describe.skip('Flaky: Agent Response Timing', () => {
 ### Rule 10: Test Performance ✅
 
 **Requirements**:
+
 - Unit tests: < 100ms per test
 - Integration tests: < 1s per test
 - E2E tests: < 30s per test
 - Full suite: < 10 minutes
 
 **Monitoring**:
+
 ```bash
 # Check slow tests
 npm test -- --verbose --no-coverage | grep -E "^\s*[0-9]+ms"
@@ -457,6 +494,7 @@ npm run test:timing
 ```
 
 **Checklist**:
+
 - [ ] Test execution time monitored
 - [ ] Slow tests optimized
 - [ ] Tests run in parallel
@@ -468,13 +506,16 @@ npm run test:timing
 ### Rule 11: Test Review Process ✅
 
 **PR Requirements**:
+
 - Tests included for all changes
 - Test code reviewed alongside source code
 - Coverage maintained or improved
 
 **PR Template** (`.github/PULL_REQUEST_TEMPLATE.md`):
-```markdown
+
+````markdown
 ## Test Checklist
+
 - [ ] Unit tests added/updated
 - [ ] Integration tests added/updated
 - [ ] E2E tests added/updated (if applicable)
@@ -483,12 +524,16 @@ npm run test:timing
 - [ ] No flaky tests introduced
 
 ## Test Evidence
+
 Paste test output:
+
 ```bash
 npm test
 # Paste output here
 ```
-```
+````
+
+````
 
 **Checklist**:
 - [ ] Tests reviewed in PR
@@ -533,9 +578,10 @@ jobs:
       - uses: codecov/codecov-action@v3
         with:
           files: ./coverage/coverage-final.json
-```
+````
 
 **Checklist**:
+
 - [ ] Tests run in CI on every PR
 - [ ] Coverage threshold enforced
 - [ ] Test reports uploaded
@@ -558,10 +604,7 @@ jobs:
     }
   },
   "lint-staged": {
-    "*.ts": [
-      "eslint --fix",
-      "jest --findRelatedTests --bail --passWithNoTests"
-    ]
+    "*.ts": ["eslint --fix", "jest --findRelatedTests --bail --passWithNoTests"]
   }
 }
 ```
@@ -666,6 +709,7 @@ graph TD
 ## Before Committing
 
 ### Unit Tests
+
 - [ ] Test file created in `src/**/__tests__/`
 - [ ] All new methods tested
 - [ ] Edge cases covered
@@ -674,24 +718,28 @@ graph TD
 - [ ] Mocks used for external services
 
 ### Integration Tests
+
 - [ ] API endpoints tested
 - [ ] Database operations tested
 - [ ] Authentication tested
 - [ ] Success and error cases covered
 
 ### E2E Tests (if applicable)
+
 - [ ] Critical flow tested
 - [ ] Proper waits (no setTimeout)
 - [ ] Success and error states verified
 - [ ] Test completes in < 30s
 
 ### Coverage
+
 - [ ] Overall >= 85%
 - [ ] Services >= 90%
 - [ ] Middleware >= 95%
 - [ ] Coverage report reviewed
 
 ### Documentation
+
 - [ ] Complex tests have comments
 - [ ] Test README updated
 - [ ] Decision log updated (if major change)
@@ -729,9 +777,9 @@ npm run test:validate-rules
 
 ## Version History
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2026-04-02 | Initial version with 12 rules |
+| Version | Date       | Changes                       |
+| ------- | ---------- | ----------------------------- |
+| 1.0.0   | 2026-04-02 | Initial version with 12 rules |
 
 ---
 

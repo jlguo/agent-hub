@@ -10,13 +10,13 @@
 
 **Overall Status**: 🔴 **CRITICAL** - Test suite is severely lacking
 
-| Metric | Target | Current | Status |
-|--------|--------|---------|--------|
-| **Unit Tests** | 70% of tests | ~0% | ❌ Missing |
-| **Integration Tests** | 20% of tests | ~0% | ❌ Missing |
-| **E2E Tests** | 10% of tests | 1 file | ⚠️ Minimal |
-| **Coverage** | 85% overall | < 5% | ❌ Critical |
-| **Test Files** | All services covered | 1/12 services | ❌ 8% coverage |
+| Metric                | Target               | Current       | Status         |
+| --------------------- | -------------------- | ------------- | -------------- |
+| **Unit Tests**        | 70% of tests         | ~0%           | ❌ Missing     |
+| **Integration Tests** | 20% of tests         | ~0%           | ❌ Missing     |
+| **E2E Tests**         | 10% of tests         | 1 file        | ⚠️ Minimal     |
+| **Coverage**          | 85% overall          | < 5%          | ❌ Critical    |
+| **Test Files**        | All services covered | 1/12 services | ❌ 8% coverage |
 
 **Priority**: **P0 - Immediate Action Required**
 
@@ -31,18 +31,18 @@
 
 #### Missing Unit Tests (P0 Priority)
 
-| File | Priority | Reason |
-|------|----------|--------|
-| `server/src/services/MessageService.ts` | P0 | Core business logic, agent selection, heat tracking |
-| `server/src/services/OpenClawService.ts` | P0 | Dual-mode HTTP/CLI integration, auth |
-| `server/src/services/HeatTracker.ts` (if exists) | P0 | Critical algorithm, probability calculations |
-| `server/src/services/AgentSelector.ts` (if exists) | P0 | Core AI selection logic |
-| `server/src/middleware/auth.ts` | P0 | Security-critical, token validation |
-| `server/src/middleware/webhookAuth.ts` | P0 | Security-critical, webhook verification |
-| `server/src/services/DiscussionService.ts` | P1 | Discussion flow, turn management |
-| `server/src/services/FeishuService.ts` | P1 | External API integration |
-| `server/src/services/FeishuOfficialService.ts` | P1 | External API integration |
-| `server/src/services/SessionGuardian.ts` | P2 | Session management |
+| File                                               | Priority | Reason                                              |
+| -------------------------------------------------- | -------- | --------------------------------------------------- |
+| `server/src/services/MessageService.ts`            | P0       | Core business logic, agent selection, heat tracking |
+| `server/src/services/OpenClawService.ts`           | P0       | Dual-mode HTTP/CLI integration, auth                |
+| `server/src/services/HeatTracker.ts` (if exists)   | P0       | Critical algorithm, probability calculations        |
+| `server/src/services/AgentSelector.ts` (if exists) | P0       | Core AI selection logic                             |
+| `server/src/middleware/auth.ts`                    | P0       | Security-critical, token validation                 |
+| `server/src/middleware/webhookAuth.ts`             | P0       | Security-critical, webhook verification             |
+| `server/src/services/DiscussionService.ts`         | P1       | Discussion flow, turn management                    |
+| `server/src/services/FeishuService.ts`             | P1       | External API integration                            |
+| `server/src/services/FeishuOfficialService.ts`     | P1       | External API integration                            |
+| `server/src/services/SessionGuardian.ts`           | P2       | Session management                                  |
 
 **Impact**: No automated validation of core business logic. Manual testing required for every change.
 
@@ -55,16 +55,16 @@
 
 #### Missing Integration Tests (P0 Priority)
 
-| Endpoint | Priority | Tests Needed |
-|----------|----------|-------------|
-| `POST /api/messages/rooms/:roomId` | P0 | Message creation, agent trigger, WebSocket emit |
-| `GET /api/messages/rooms/:roomId` | P0 | Message retrieval, pagination, ordering |
-| `POST /api/openclaw/gateway` | P0 | HTTP mode auth, CLI mode fallback, error handling |
-| `GET /api/openclaw/gateway/health` | P1 | Health check endpoint |
-| `GET /api/rooms` | P1 | Room listing with agent counts |
-| `GET /api/agents` | P2 | Agent listing |
-| `POST /api/webhooks/feishu` | P1 | Feishu webhook handling |
-| WebSocket events | P1 | `room:join`, `message:send`, `message:new` |
+| Endpoint                           | Priority | Tests Needed                                      |
+| ---------------------------------- | -------- | ------------------------------------------------- |
+| `POST /api/messages/rooms/:roomId` | P0       | Message creation, agent trigger, WebSocket emit   |
+| `GET /api/messages/rooms/:roomId`  | P0       | Message retrieval, pagination, ordering           |
+| `POST /api/openclaw/gateway`       | P0       | HTTP mode auth, CLI mode fallback, error handling |
+| `GET /api/openclaw/gateway/health` | P1       | Health check endpoint                             |
+| `GET /api/rooms`                   | P1       | Room listing with agent counts                    |
+| `GET /api/agents`                  | P2       | Agent listing                                     |
+| `POST /api/webhooks/feishu`        | P1       | Feishu webhook handling                           |
+| WebSocket events                   | P1       | `room:join`, `message:send`, `message:new`        |
 
 **Impact**: API contracts not validated. Breaking changes undetected.
 
@@ -81,7 +81,7 @@
 tests/e2e/discussion.spec.ts
 - Status: ❌ Failing (Jest configuration issue)
 - Coverage: Discussion feature only
-- Issues: 
+- Issues:
   - Uses Jest config instead of Playwright
   - Has console.log (violates Rule 8)
   - Likely outdated
@@ -89,13 +89,13 @@ tests/e2e/discussion.spec.ts
 
 #### Missing E2E Tests (P0 Priority)
 
-| Flow | Priority | Description |
-|------|----------|-------------|
-| `critical-flows.spec.ts` | P0 | Message → Agent response flow |
-| `mention-targeting.spec.ts` | P0 | @mention triggers specific agent |
-| `feishu-integration.spec.ts` | P0 | Feishu ↔ Web UI sync |
-| `agent-responses.spec.ts` | P1 | Agent personality, family terms |
-| `error-handling.spec.ts` | P1 | Graceful error handling |
+| Flow                         | Priority | Description                      |
+| ---------------------------- | -------- | -------------------------------- |
+| `critical-flows.spec.ts`     | P0       | Message → Agent response flow    |
+| `mention-targeting.spec.ts`  | P0       | @mention triggers specific agent |
+| `feishu-integration.spec.ts` | P0       | Feishu ↔ Web UI sync             |
+| `agent-responses.spec.ts`    | P1       | Agent personality, family terms  |
+| `error-handling.spec.ts`     | P1       | Graceful error handling          |
 
 **Impact**: User flows not validated end-to-end. Regression risk high.
 
@@ -108,12 +108,12 @@ tests/e2e/discussion.spec.ts
 
 #### Coverage by Component
 
-| Component | Target | Current | Gap |
-|-----------|--------|---------|-----|
-| Services | 90% | ~0% | -90% |
-| Middleware | 95% | ~0% | -95% |
-| Routes | 85% | ~0% | -85% |
-| Utilities | 80% | ~0% | -80% |
+| Component   | Target  | Current  | Gap      |
+| ----------- | ------- | -------- | -------- |
+| Services    | 90%     | ~0%      | -90%     |
+| Middleware  | 95%     | ~0%      | -95%     |
+| Routes      | 85%     | ~0%      | -85%     |
+| Utilities   | 80%     | ~0%      | -80%     |
 | **Overall** | **85%** | **< 5%** | **-80%** |
 
 **Impact**: No visibility into untested code paths.
@@ -145,20 +145,20 @@ tests/e2e/discussion.spec.ts
 
 ### 6. Rule Compliance - MIXED
 
-| Rule | Status | Notes |
-|------|--------|-------|
-| Rule 1: Test Pyramid | ❌ | No tests exist |
-| Rule 2: Unit Tests | ❌ | Zero unit tests |
-| Rule 3: Integration Tests | ❌ | Zero integration tests |
-| Rule 4: E2E Tests | ⚠️ | 1 file, failing |
-| Rule 5: Coverage | ❌ | < 5% |
-| Rule 6: Mocking | ❌ | No mocks defined |
-| Rule 7: Test Data | ❌ | No factories/fixtures |
-| Rule 8: Documentation | ✅ | tests/README.md exists |
-| Rule 9: Flaky Tests | ✅ | N/A (no tests yet) |
-| Rule 10: Performance | ✅ | N/A (no tests yet) |
-| Rule 11: Review Process | ❌ | No PR template |
-| Rule 12: CI/CD | ❌ | No pipeline |
+| Rule                      | Status | Notes                  |
+| ------------------------- | ------ | ---------------------- |
+| Rule 1: Test Pyramid      | ❌     | No tests exist         |
+| Rule 2: Unit Tests        | ❌     | Zero unit tests        |
+| Rule 3: Integration Tests | ❌     | Zero integration tests |
+| Rule 4: E2E Tests         | ⚠️     | 1 file, failing        |
+| Rule 5: Coverage          | ❌     | < 5%                   |
+| Rule 6: Mocking           | ❌     | No mocks defined       |
+| Rule 7: Test Data         | ❌     | No factories/fixtures  |
+| Rule 8: Documentation     | ✅     | tests/README.md exists |
+| Rule 9: Flaky Tests       | ✅     | N/A (no tests yet)     |
+| Rule 10: Performance      | ✅     | N/A (no tests yet)     |
+| Rule 11: Review Process   | ❌     | No PR template         |
+| Rule 12: CI/CD            | ❌     | No pipeline            |
 
 ---
 
@@ -197,6 +197,7 @@ tests/e2e/discussion.spec.ts
 #### Tasks
 
 **1.1 Configure Jest** (2 hours)
+
 ```bash
 # Install dependencies
 npm install -D jest @types/jest ts-jest @swc/jest
@@ -205,12 +206,14 @@ npm install -D jest @types/jest ts-jest @swc/jest
 ```
 
 **1.2 Set Up Test Database** (1 hour)
+
 ```bash
 # Create test database configuration
 # Add database reset utilities
 ```
 
 **1.3 Create Factories & Fixtures** (3 hours)
+
 ```typescript
 // tests/factories/messageFactory.ts
 // tests/factories/agentFactory.ts
@@ -218,6 +221,7 @@ npm install -D jest @types/jest ts-jest @swc/jest
 ```
 
 **1.4 Set Up Mocking** (2 hours)
+
 ```typescript
 // tests/__mocks__/OpenClawService.ts
 // tests/__mocks__/FeishuService.ts
@@ -225,6 +229,7 @@ npm install -D jest @types/jest ts-jest @swc/jest
 ```
 
 **1.5 Configure Playwright Properly** (1 hour)
+
 ```bash
 # Fix playwright.config.ts
 # Remove Jest from E2E tests
@@ -241,6 +246,7 @@ npm install -D jest @types/jest ts-jest @swc/jest
 #### Tasks
 
 **2.1 MessageService Tests** (4 hours)
+
 ```typescript
 // 15-20 test cases
 - selectAgentWithMention
@@ -251,6 +257,7 @@ npm install -D jest @types/jest ts-jest @swc/jest
 ```
 
 **2.2 OpenClawService Tests** (3 hours)
+
 ```typescript
 // 10-15 test cases
 - HTTP mode
@@ -261,6 +268,7 @@ npm install -D jest @types/jest ts-jest @swc/jest
 ```
 
 **2.3 Auth Middleware Tests** (2 hours)
+
 ```typescript
 // 8-10 test cases
 - verifyToken
@@ -269,6 +277,7 @@ npm install -D jest @types/jest ts-jest @swc/jest
 ```
 
 **2.4 HeatTracker Tests** (3 hours)
+
 ```typescript
 // 12-15 test cases
 - Heat calculation
@@ -278,6 +287,7 @@ npm install -D jest @types/jest ts-jest @swc/jest
 ```
 
 **2.5 AgentSelector Tests** (3 hours)
+
 ```typescript
 // 10-12 test cases
 - Scoring algorithm
@@ -297,6 +307,7 @@ npm install -D jest @types/jest ts-jest @swc/jest
 #### Tasks
 
 **3.1 Messages API Tests** (3 hours)
+
 ```typescript
 // POST /api/messages/rooms/:roomId
 // GET /api/messages/rooms/:roomId
@@ -304,6 +315,7 @@ npm install -D jest @types/jest ts-jest @swc/jest
 ```
 
 **3.2 OpenClaw Gateway Tests** (3 hours)
+
 ```typescript
 // POST /api/openclaw/gateway
 // GET /api/openclaw/gateway/health
@@ -311,12 +323,14 @@ npm install -D jest @types/jest ts-jest @swc/jest
 ```
 
 **3.3 Rooms & Agents API Tests** (2 hours)
+
 ```typescript
 // GET /api/rooms
 // GET /api/agents
 ```
 
 **3.4 WebSocket Integration Tests** (3 hours)
+
 ```typescript
 // room:join events
 // message:send events
@@ -324,6 +338,7 @@ npm install -D jest @types/jest ts-jest @swc/jest
 ```
 
 **3.5 Database Integration Tests** (2 hours)
+
 ```typescript
 // Message persistence
 // Discussion creation
@@ -341,6 +356,7 @@ npm install -D jest @types/jest ts-jest @swc/jest
 #### Tasks
 
 **4.1 Critical Flows** (4 hours)
+
 ```typescript
 // User sends message → Agent responds
 // @mention → Specific agent responds
@@ -348,6 +364,7 @@ npm install -D jest @types/jest ts-jest @swc/jest
 ```
 
 **4.2 Feishu Integration** (3 hours)
+
 ```typescript
 // Feishu message → Web UI
 // Web UI message → Feishu
@@ -355,6 +372,7 @@ npm install -D jest @types/jest ts-jest @swc/jest
 ```
 
 **4.3 Agent Responses** (2 hours)
+
 ```typescript
 // Personality consistency
 // Family term usage
@@ -362,6 +380,7 @@ npm install -D jest @types/jest ts-jest @swc/jest
 ```
 
 **4.4 Error Handling** (2 hours)
+
 ```typescript
 // OpenClaw timeout
 // Network failures
@@ -379,12 +398,14 @@ npm install -D jest @types/jest ts-jest @swc/jest
 #### Tasks
 
 **5.1 Install Husky** (1 hour)
+
 ```bash
 npm install -D husky lint-staged
 npx husky install
 ```
 
 **5.2 Configure Pre-commit Hooks** (1 hour)
+
 ```json
 {
   "husky": {
@@ -397,6 +418,7 @@ npx husky install
 ```
 
 **5.3 Set Up CI/CD Pipeline** (3 hours)
+
 ```yaml
 # .github/workflows/ci.yml
 - Run unit tests
@@ -407,14 +429,17 @@ npx husky install
 ```
 
 **5.4 Update PR Template** (1 hour)
+
 ```markdown
 ## Test Checklist
+
 - [ ] Unit tests added
 - [ ] Integration tests added
 - [ ] npm run test:validate-rules passed
 ```
 
 **5.5 Configure Coverage Reporting** (1 hour)
+
 ```yaml
 # Upload to Codecov
 - uses: codecov/codecov-action@v3
@@ -427,27 +452,32 @@ npx husky install
 ## Success Metrics
 
 ### Week 1 (Infrastructure)
+
 - ✅ Jest runs successfully
 - ✅ Playwright runs successfully
 - ✅ Factories/fixtures available
 - ✅ Mocks configured
 
 ### Week 2 (Unit Tests)
+
 - ✅ 50+ unit tests written
 - ✅ Coverage >= 40%
 - ✅ All critical services tested
 
 ### Week 3 (Integration Tests)
+
 - ✅ 30+ integration tests written
 - ✅ Coverage >= 60%
 - ✅ All API endpoints tested
 
 ### Week 4 (E2E Tests)
+
 - ✅ 15+ E2E tests written
 - ✅ Critical flows covered
 - ✅ Coverage >= 70%
 
 ### Week 5 (Enforcement)
+
 - ✅ Pre-commit hooks active
 - ✅ CI/CD pipeline running
 - ✅ Coverage threshold enforced (85%)
@@ -457,39 +487,47 @@ npx husky install
 
 ## Resource Estimate
 
-| Phase | Time | Effort |
-|-------|------|--------|
-| Phase 1: Infrastructure | 9 hours | 1-2 days |
-| Phase 2: Unit Tests | 15 hours | 2-3 days |
-| Phase 3: Integration | 13 hours | 2 days |
-| Phase 4: E2E | 11 hours | 1-2 days |
-| Phase 5: Enforcement | 7 hours | 1 day |
-| **Total** | **55 hours** | **7-10 days** |
+| Phase                   | Time         | Effort        |
+| ----------------------- | ------------ | ------------- |
+| Phase 1: Infrastructure | 9 hours      | 1-2 days      |
+| Phase 2: Unit Tests     | 15 hours     | 2-3 days      |
+| Phase 3: Integration    | 13 hours     | 2 days        |
+| Phase 4: E2E            | 11 hours     | 1-2 days      |
+| Phase 5: Enforcement    | 7 hours      | 1 day         |
+| **Total**               | **55 hours** | **7-10 days** |
 
 ---
 
 ## Risks & Mitigation
 
 ### Risk 1: Tests Too Slow
-**Mitigation**: 
+
+**Mitigation**:
+
 - Parallel execution
 - Test sharding in CI
 - Optimize database queries
 
 ### Risk 2: Flaky Tests
+
 **Mitigation**:
+
 - Proper waits (no setTimeout)
 - Isolated test state
 - Mock external services
 
 ### Risk 3: Maintenance Burden
+
 **Mitigation**:
+
 - Use factories/fixtures
 - DRY test logic
 - Regular refactoring (monthly)
 
 ### Risk 4: False Sense of Security
+
 **Mitigation**:
+
 - Focus on behavior, not implementation
 - Test edge cases
 - Manual testing still needed
@@ -501,6 +539,7 @@ npx husky install
 ### Today (P0)
 
 1. **Fix Jest Configuration** (2 hours)
+
    ```bash
    # Create jest.config.ts
    # Configure TypeScript support
@@ -508,6 +547,7 @@ npx husky install
    ```
 
 2. **Create First Unit Test** (1 hour)
+
    ```typescript
    // Start with MessageService
    // Prove infrastructure works
@@ -546,6 +586,7 @@ npx husky install
 ---
 
 **Review Schedule**:
+
 - Daily: Test count and coverage progress
 - Weekly: Phase completion review
 - Monthly: Ongoing maintenance review

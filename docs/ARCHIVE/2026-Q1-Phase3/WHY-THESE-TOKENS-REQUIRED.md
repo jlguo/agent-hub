@@ -9,6 +9,7 @@
 ### What Problem Does It Solve?
 
 **Problem**: Anyone could call your OpenClaw Gateway and:
+
 - Use your configured AI agents
 - Send messages through your Feishu bot
 - Consume your API quotas
@@ -54,9 +55,9 @@ curl http://localhost:4000/api/agent \
 // server/src/services/OpenClawService.ts
 async sendMessage(agentId: string, message: string) {
   const token = process.env.OPENCLAW_VERIFICATION_TOKEN;
-  
+
   const command = `openclaw agent --session-id ${agentId} --message "${message}" --token ${token}`;
-  
+
   // Without token, OpenClaw CLI rejects the request
   const { stdout } = await exec(command);
   return stdout;
@@ -87,6 +88,7 @@ async sendMessage(agentId: string, message: string) {
 ### What Problem Does It Solve?
 
 **Problem**: Anyone could send fake webhooks to your Agent Hub and:
+
 - Trigger agent responses spam
 - Inject malicious messages
 - Flood your database with fake data
@@ -118,12 +120,14 @@ async sendMessage(agentId: string, message: string) {
 ### Verification Flow
 
 **Step 1**: You set token in Feishu Open Platform
+
 ```
 Feishu Open Platform → Event Subscriptions → Settings
 Verify Token: "agent-hub-verify-token"
 ```
 
 **Step 2**: Feishu sends webhook with signature
+
 ```http
 POST /api/webhooks/feishu
 Content-Type: application/json
@@ -136,17 +140,18 @@ Content-Type: application/json
 ```
 
 **Step 3**: Agent Hub verifies signature
+
 ```typescript
 // server/src/routes/webhooks.ts
 app.post('/api/webhooks/feishu', (req, res) => {
   const { token } = req.body;
   const expectedToken = process.env.FEISHU_VERIFY_TOKEN;
-  
+
   if (token !== expectedToken) {
     // ❌ Reject fake webhooks
     return res.status(403).json({ error: 'Invalid token' });
   }
-  
+
   // ✅ Process real Feishu webhooks
   handleMessage(req.body);
   res.status(200).json({ challenge: req.body.challenge });
@@ -190,14 +195,14 @@ curl: ... -d '{"token": "wrong-token"}'
 
 ## Key Differences
 
-| Aspect | OPENCLAW_VERIFICATION_TOKEN | FEISHU_VERIFY_TOKEN |
-|--------|----------------------------|---------------------|
-| **Direction** | Outbound (Agent Hub → OpenClaw) | Inbound (Feishu → Agent Hub) |
-| **Purpose** | Authenticate API requests | Verify webhook authenticity |
-| **Format** | 40-char hex string | Any string (you choose) |
-| **Who Provides** | OpenClaw config (`~/.openclaw/openclaw.json`) | You create it (set in both places) |
-| **Where Used** | OpenClaw CLI commands | Feishu webhook handler |
-| **Attack Prevented** | Unauthorized API usage | Fake webhook injection |
+| Aspect               | OPENCLAW_VERIFICATION_TOKEN                   | FEISHU_VERIFY_TOKEN                |
+| -------------------- | --------------------------------------------- | ---------------------------------- |
+| **Direction**        | Outbound (Agent Hub → OpenClaw)               | Inbound (Feishu → Agent Hub)       |
+| **Purpose**          | Authenticate API requests                     | Verify webhook authenticity        |
+| **Format**           | 40-char hex string                            | Any string (you choose)            |
+| **Who Provides**     | OpenClaw config (`~/.openclaw/openclaw.json`) | You create it (set in both places) |
+| **Where Used**       | OpenClaw CLI commands                         | Feishu webhook handler             |
+| **Attack Prevented** | Unauthorized API usage                        | Fake webhook injection             |
 
 ---
 
@@ -236,9 +241,9 @@ cat ~/.openclaw/openclaw.json | grep -A 5 "gateway"
 # Output:
 # "gateway": {
 #   "mode": "local",
-#   "auth": { 
-#     "mode": "token", 
-#     "token": "4c865174de200c8e808a9dfdc6a0cbc4c76d7eea9ab77468" 
+#   "auth": {
+#     "mode": "token",
+#     "token": "4c865174de200c8e808a9dfdc6a0cbc4c76d7eea9ab77468"
 #   }
 # }
 ```
@@ -252,6 +257,7 @@ cat ~/.openclaw/openclaw.json | grep -A 5 "gateway"
 **Source**: You create it!
 
 **Step 1**: Choose any string (recommend 16+ characters)
+
 ```bash
 # Option 1: Simple
 agent-hub-verify-token
@@ -266,15 +272,17 @@ uuidgen | tr -d '-'
 ```
 
 **Step 2**: Set in Feishu Open Platform
+
 1. Go to https://open.feishu.cn/
 2. Your App → Event Subscriptions → Settings
 3. Enter token: `agent-hub-verify-token`
 4. Save
 
 **Step 3**: Set in secrets.local.yaml
+
 ```yaml
 secrets:
-  FEISHU_VERIFY_TOKEN: "agent-hub-verify-token"  # Must match!
+  FEISHU_VERIFY_TOKEN: 'agent-hub-verify-token' # Must match!
 ```
 
 **Critical**: Token must match in BOTH places!
@@ -284,12 +292,16 @@ secrets:
 ## What If I'm Only Using Web UI (No Feishu)?
 
 ### OPENCLAW_VERIFICATION_TOKEN
+
 **Still Required** ✅
+
 - You're still using OpenClaw agents for AI responses
 - Token authenticates Agent Hub to OpenClaw
 
 ### FEISHU_VERIFY_TOKEN
+
 **Optional** ❌
+
 - If not using Feishu, no webhooks to verify
 - You can skip this field entirely
 
@@ -301,10 +313,10 @@ secrets:
   # FEISHU_APP_SECRET: (not needed)
   # FEISHU_CHAT_ID: (not needed)
   # FEISHU_VERIFY_TOKEN: (not needed) ← Skip!
-  
+
   # Still need OpenClaw
   OPENCLAW_VERIFICATION_TOKEN: "xxx" ✅
-  
+
   # Security
   JWT_SECRET: "xxx" ✅
   ENCRYPTION_KEY: "xxx" ✅
@@ -323,10 +335,10 @@ secrets:
   FEISHU_APP_SECRET: "xxx" ✅
   FEISHU_CHAT_ID: "oc_xxx" ✅
   FEISHU_VERIFY_TOKEN: "xxx" ✅ ← Required!
-  
+
   # OpenClaw
   OPENCLAW_VERIFICATION_TOKEN: "xxx" ✅ ← Required!
-  
+
   # Security
   JWT_SECRET: "xxx" ✅
   ENCRYPTION_KEY: "xxx" ✅

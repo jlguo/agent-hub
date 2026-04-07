@@ -13,6 +13,7 @@
 This document provides the technical design for setting up comprehensive test infrastructure for Agent Hub. Phase 1 establishes the foundation for all subsequent testing work (Phases 2-5).
 
 **Goal**: Create robust, scalable test infrastructure that supports:
+
 - Unit tests (Jest + TypeScript)
 - Integration tests (Supertest + in-memory DB)
 - E2E tests (Playwright)
@@ -25,13 +26,13 @@ This document provides the technical design for setting up comprehensive test in
 
 ### Test Coverage (As of 2026-04-02)
 
-| Component | Target | Current | Gap |
-|-----------|--------|---------|-----|
-| **Overall** | 85% | <5% | -80% |
-| **Unit Tests** | 70% | ~0% | -70% |
-| **Integration** | 20% | ~0% | -20% |
-| **E2E Tests** | 10% | 1 file (failing) | -9% |
-| **Services** | 100% | 8% (1/12) | -92% |
+| Component       | Target | Current          | Gap  |
+| --------------- | ------ | ---------------- | ---- |
+| **Overall**     | 85%    | <5%              | -80% |
+| **Unit Tests**  | 70%    | ~0%              | -70% |
+| **Integration** | 20%    | ~0%              | -20% |
+| **E2E Tests**   | 10%    | 1 file (failing) | -9%  |
+| **Services**    | 100%   | 8% (1/12)        | -92% |
 
 ### Existing Test Files
 
@@ -78,14 +79,14 @@ tests/
 
 ### Technology Stack
 
-| Layer | Tool | Purpose | Why |
-|-------|------|---------|-----|
-| **Unit Tests** | Jest + ts-jest | Test individual functions/classes | Industry standard, fast, TypeScript support |
-| **Integration** | Supertest + Jest | Test API endpoints | Express-compatible, easy mocking |
-| **E2E Tests** | Playwright | Test full user flows | Already in use, cross-browser |
-| **Coverage** | Istanbul (via Jest) | Measure code coverage | Accurate, detailed reports |
-| **Mocking** | Jest mocks + MSW | Mock external services | Built-in, powerful |
-| **Test Data** | Factory libraries | Generate test data | Consistent, maintainable |
+| Layer           | Tool                | Purpose                           | Why                                         |
+| --------------- | ------------------- | --------------------------------- | ------------------------------------------- |
+| **Unit Tests**  | Jest + ts-jest      | Test individual functions/classes | Industry standard, fast, TypeScript support |
+| **Integration** | Supertest + Jest    | Test API endpoints                | Express-compatible, easy mocking            |
+| **E2E Tests**   | Playwright          | Test full user flows              | Already in use, cross-browser               |
+| **Coverage**    | Istanbul (via Jest) | Measure code coverage             | Accurate, detailed reports                  |
+| **Mocking**     | Jest mocks + MSW    | Mock external services            | Built-in, powerful                          |
+| **Test Data**   | Factory libraries   | Generate test data                | Consistent, maintainable                    |
 
 ---
 
@@ -167,9 +168,12 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/server/src/$1',
   },
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: 'server/tsconfig.json',
-    }],
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        tsconfig: 'server/tsconfig.json',
+      },
+    ],
   },
 };
 ```
@@ -345,10 +349,7 @@ const defaultMessage = {
   metadata: JSON.stringify({ test: true }),
 };
 
-export function createMessage(
-  roomId: string,
-  overrides: Partial<Prisma.MessageCreateInput> = {}
-) {
+export function createMessage(roomId: string, overrides: Partial<Prisma.MessageCreateInput> = {}) {
   return {
     ...defaultMessage,
     room: { connect: { id: roomId } },
@@ -478,21 +479,21 @@ npm install -D istanbul
 
 ### Dependencies
 
-| Dependency | Status | Owner |
-|------------|--------|-------|
-| Node.js 18+ | ✅ Installed | DevOps |
-| TypeScript | ✅ Configured | Dev |
-| Prisma | ✅ Configured | Dev |
-| Playwright | ✅ Installed | QA |
+| Dependency  | Status        | Owner  |
+| ----------- | ------------- | ------ |
+| Node.js 18+ | ✅ Installed  | DevOps |
+| TypeScript  | ✅ Configured | Dev    |
+| Prisma      | ✅ Configured | Dev    |
+| Playwright  | ✅ Installed  | QA     |
 
 ### Risks
 
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| Test database conflicts with dev DB | Medium | Low | Use separate file path |
-| Jest config conflicts with existing setup | Low | Medium | Test in isolation first |
-| Mocking Prisma is complex | Medium | High | Use real test DB instead |
-| Tests run too slow | High | Medium | Parallel execution, limit DB ops |
+| Risk                                      | Impact | Probability | Mitigation                       |
+| ----------------------------------------- | ------ | ----------- | -------------------------------- |
+| Test database conflicts with dev DB       | Medium | Low         | Use separate file path           |
+| Jest config conflicts with existing setup | Low    | Medium      | Test in isolation first          |
+| Mocking Prisma is complex                 | Medium | High        | Use real test DB instead         |
+| Tests run too slow                        | High   | Medium      | Parallel execution, limit DB ops |
 
 ---
 
@@ -501,11 +502,13 @@ npm install -D istanbul
 ### Unit Tests
 
 **What to Test**:
+
 - Service methods (MessageService, HeatTracker, AgentSelector)
 - Utility functions (error-handler, scoring)
 - Pure functions (no external dependencies)
 
 **What NOT to Test**:
+
 - Prisma queries (use integration tests)
 - WebSocket connections (use integration tests)
 - External API calls (mock these)
@@ -534,6 +537,7 @@ describe('MessageService', () => {
 ### Integration Tests
 
 **What to Test**:
+
 - API endpoints (GET /api/rooms, POST /api/messages)
 - Database operations
 - WebSocket events
@@ -545,7 +549,7 @@ describe('MessageService', () => {
 describe('POST /api/messages/rooms/:roomId', () => {
   it('should create message and return 201', async () => {
     const room = await testPrisma.room.create({ data: { name: 'Test Room' } });
-    
+
     const response = await request(app)
       .post(`/api/messages/rooms/${room.id}`)
       .send({ content: 'Test message', senderType: 'human' });
@@ -560,13 +564,13 @@ describe('POST /api/messages/rooms/:roomId', () => {
 
 ## Success Metrics
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| **Test Count** | 60+ tests | Jest + Playwright output |
-| **Coverage** | >40% | Istanbul report |
-| **Execution Time** | <2 min | CI pipeline timing |
-| **Pass Rate** | 100% | All tests green |
-| **Flaky Tests** | 0 | CI stability |
+| Metric             | Target    | Measurement              |
+| ------------------ | --------- | ------------------------ |
+| **Test Count**     | 60+ tests | Jest + Playwright output |
+| **Coverage**       | >40%      | Istanbul report          |
+| **Execution Time** | <2 min    | CI pipeline timing       |
+| **Pass Rate**      | 100%      | All tests green          |
+| **Flaky Tests**    | 0         | CI stability             |
 
 ---
 

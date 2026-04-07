@@ -74,6 +74,7 @@ Agent message appears in chat
 ### 1.3 WebSocket Events
 
 #### Event: `typing:start`
+
 ```typescript
 // Server emits when agent starts generating response
 io.to(roomId).emit('typing:start', {
@@ -81,18 +82,19 @@ io.to(roomId).emit('typing:start', {
   agentName: 'Mom',
   agentAvatar: '👩',
   timestamp: '2026-04-01T11:00:00.000Z',
-  estimatedDuration: 30000 // 30s estimate based on avg response time
+  estimatedDuration: 30000, // 30s estimate based on avg response time
 });
 ```
 
 #### Event: `typing:stop`
+
 ```typescript
 // Server emits when agent response is ready
 io.to(roomId).emit('typing:stop', {
   agentId: 'family-mom',
   agentName: 'Mom',
   timestamp: '2026-04-01T11:00:30.000Z',
-  duration: 30000 // Actual duration in ms
+  duration: 30000, // Actual duration in ms
 });
 ```
 
@@ -108,11 +110,11 @@ interface TypingIndicatorProps {
   duration?: number; // For progress bar
 }
 
-export function TypingIndicator({ 
-  agentName, 
-  agentAvatar, 
+export function TypingIndicator({
+  agentName,
+  agentAvatar,
   isVisible,
-  duration 
+  duration
 }: TypingIndicatorProps) {
   if (!isVisible) return null;
 
@@ -127,10 +129,10 @@ export function TypingIndicator({
         {/* Optional: Progress bar for long responses */}
         {duration && duration > 20000 && (
           <div className="mt-1 w-full bg-gray-200 rounded-full h-1">
-            <div 
+            <div
               className="bg-blue-500 h-1 rounded-full animate-progress"
-              style={{ 
-                animationDuration: `${Math.min(duration, 120000)}ms` 
+              style={{
+                animationDuration: `${Math.min(duration, 120000)}ms`
               }}
             />
           </div>
@@ -146,11 +148,7 @@ export function TypingIndicator({
 **File**: `server/src/services/MessageService.ts`
 
 ```typescript
-async function triggerAgentResponse(
-  roomId: string,
-  message: string,
-  discussionId: string
-) {
+async function triggerAgentResponse(roomId: string, message: string, discussionId: string) {
   // 1. Select agent
   const agent = await agentSelector.selectAgents(roomId, message, discussionId);
   if (!agent || agent.length === 0) return;
@@ -164,7 +162,7 @@ async function triggerAgentResponse(
     agentName: selectedAgent.name,
     agentAvatar: selectedAgent.avatar,
     timestamp: new Date().toISOString(),
-    estimatedDuration: 30000 // Default 30s estimate
+    estimatedDuration: 30000, // Default 30s estimate
   });
 
   const startTime = Date.now();
@@ -190,10 +188,10 @@ async function triggerAgentResponse(
         content: response.text,
         metadata: {
           generationTime: duration,
-          model: response.model
-        }
+          model: response.model,
+        },
       },
-      include: { agent: true }
+      include: { agent: true },
     });
 
     // 5. Emit typing:stop
@@ -201,23 +199,22 @@ async function triggerAgentResponse(
       agentId: selectedAgent.id,
       agentName: selectedAgent.name,
       timestamp: new Date().toISOString(),
-      duration
+      duration,
     });
 
     // 6. Emit message:new (the actual response)
     io.to(roomId).emit('message:new', {
       ...agentMessage,
       agentName: agentMessage.agent?.name,
-      agentAvatar: agentMessage.agent?.avatar
+      agentAvatar: agentMessage.agent?.avatar,
     });
-
   } catch (error) {
     // 7. Handle error - emit typing:stop anyway
     io.to(roomId).emit('typing:stop', {
       agentId: selectedAgent.id,
       agentName: selectedAgent.name,
       timestamp: new Date().toISOString(),
-      error: true
+      error: true,
     });
 
     throw error;
@@ -271,17 +268,17 @@ model Message {
   id        String   @id @default(cuid())
   roomId    String
   room      Room     @relation(fields: [roomId], references: [id])
-  
+
   // Existing fields
   senderType String  // 'human' | 'agent' | 'system'
   agentId    String?
   agent      Agent?  @relation(fields: [agentId], references: [id])
   content    String
   createdAt  DateTime @default(now())
-  
+
   // NEW: Read receipts
   readBy     MessageRead[]
-  
+
   // Existing relations
   discussionId String?
   discussion   Discussion? @relation(fields: [discussionId], references: [id])
@@ -294,7 +291,7 @@ model MessageRead {
   message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
   userId    String   // Feishu user ID or session ID
   readAt    DateTime @default(now())
-  
+
   @@unique([messageId, userId]) // One read record per user per message
   @@index([userId, readAt])
 }
@@ -306,7 +303,7 @@ model UserRoomRead {
   room      Room     @relation(fields: [roomId], references: [id])
   userId    String
   lastReadAt DateTime @default(now())
-  
+
   @@unique([roomId, userId]) // One record per user per room
   @@index([roomId, userId])
 }
@@ -335,6 +332,7 @@ Other users see: "User123 read 5 messages"
 ### 2.3 API Endpoints
 
 #### GET `/api/messages/rooms/:roomId/unread-count`
+
 ```typescript
 // Get count of unread messages for current user
 GET /api/messages/rooms/family-room-demo/unread-count
@@ -351,6 +349,7 @@ Response: 200 OK
 ```
 
 #### POST `/api/messages/rooms/:roomId/read`
+
 ```typescript
 // Mark messages as read
 POST /api/messages/rooms/family-room-demo/read
@@ -367,13 +366,14 @@ Response: 200 OK
 ```
 
 #### WebSocket Event: `read:update`
+
 ```typescript
 // Server emits when user reads messages
 io.to(roomId).emit('read:update', {
   userId: 'ou_b525c9f2d700b31f507260bd0dd6d477',
   userName: 'user951367',
   readCount: 5,
-  timestamp: '2026-04-01T11:00:00.000Z'
+  timestamp: '2026-04-01T11:00:00.000Z',
 });
 ```
 
@@ -391,7 +391,7 @@ export function useReadReceipts(roomId: string, userId: string) {
   useEffect(() => {
     async function loadUnread() {
       const res = await fetch(`/api/messages/rooms/${roomId}/unread-count`, {
-        headers: { 'X-User-ID': userId }
+        headers: { 'X-User-ID': userId },
       });
       const data = await res.json();
       setUnreadCount(data.unreadCount);
@@ -406,9 +406,11 @@ export function useReadReceipts(roomId: string, userId: string) {
 
     socket.on('message:new', (message) => {
       // If message is from current user or after last read, increment
-      if (message.senderId !== userId && 
-          (!lastReadAt || new Date(message.createdAt) > lastReadAt)) {
-        setUnreadCount(prev => prev + 1);
+      if (
+        message.senderId !== userId &&
+        (!lastReadAt || new Date(message.createdAt) > lastReadAt)
+      ) {
+        setUnreadCount((prev) => prev + 1);
       }
     });
 
@@ -424,29 +426,32 @@ export function useReadReceipts(roomId: string, userId: string) {
   }, [socket, userId, lastReadAt]);
 
   // Mark messages as read
-  const markAsRead = useCallback(async (upTo: Date = new Date()) => {
-    if (unreadCount === 0) return;
+  const markAsRead = useCallback(
+    async (upTo: Date = new Date()) => {
+      if (unreadCount === 0) return;
 
-    await fetch(`/api/messages/rooms/${roomId}/read`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'X-User-ID': userId 
-      },
-      body: JSON.stringify({ upTo: upTo.toISOString() })
-    });
+      await fetch(`/api/messages/rooms/${roomId}/read`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-ID': userId,
+        },
+        body: JSON.stringify({ upTo: upTo.toISOString() }),
+      });
 
-    setUnreadCount(0);
-    setLastReadAt(upTo);
+      setUnreadCount(0);
+      setLastReadAt(upTo);
 
-    // Emit to other users
-    socket?.emit('read:update', {
-      roomId,
-      userId,
-      readCount: unreadCount,
-      timestamp: upTo.toISOString()
-    });
-  }, [roomId, userId, unreadCount, socket]);
+      // Emit to other users
+      socket?.emit('read:update', {
+        roomId,
+        userId,
+        readCount: unreadCount,
+        timestamp: upTo.toISOString(),
+      });
+    },
+    [roomId, userId, unreadCount, socket]
+  );
 
   // Auto-mark as read when user focuses window
   useEffect(() => {
@@ -560,7 +565,7 @@ export default function AdminDashboard() {
       setStats(data);
     }
     loadStats();
-    
+
     // Refresh every 30s
     const interval = setInterval(loadStats, 30000);
     return () => clearInterval(interval);
@@ -571,22 +576,22 @@ export default function AdminDashboard() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">System Dashboard</h1>
-      
+
       {/* Health Status */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <HealthCard 
-          title="Backend" 
-          status={stats.health.backend ? 'healthy' : 'down'} 
+        <HealthCard
+          title="Backend"
+          status={stats.health.backend ? 'healthy' : 'down'}
           latency={stats.health.backendLatency}
         />
-        <HealthCard 
-          title="Database" 
-          status={stats.health.database ? 'healthy' : 'down'} 
+        <HealthCard
+          title="Database"
+          status={stats.health.database ? 'healthy' : 'down'}
           latency={stats.health.databaseLatency}
         />
-        <HealthCard 
-          title="Feishu" 
-          status={stats.health.feishu ? 'healthy' : 'down'} 
+        <HealthCard
+          title="Feishu"
+          status={stats.health.feishu ? 'healthy' : 'down'}
           latency={stats.health.feishuLatency}
         />
       </div>
@@ -634,7 +639,7 @@ export default function RoomsPage() {
 
   const deleteRoom = async (roomId: string) => {
     if (!confirm('Delete this room? This cannot be undone.')) return;
-    
+
     await fetch(`/api/admin/rooms/${roomId}`, { method: 'DELETE' });
     setRooms(rooms.filter(r => r.id !== roomId));
   };
@@ -675,7 +680,7 @@ export default function RoomsPage() {
                 <Link href={`/admin/rooms/${room.id}`} className="text-blue-600 mr-3">
                   Edit
                 </Link>
-                <button 
+                <button
                   onClick={() => deleteRoom(room.id)}
                   className="text-red-600"
                 >
@@ -739,7 +744,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
   return (
     <div className="p-6 max-w-2xl">
       <h1 className="text-2xl font-bold mb-6">Edit Agent: {agent.name}</h1>
-      
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Name</label>
@@ -857,41 +862,35 @@ router.use(authMiddleware);
 
 // GET /api/admin/stats
 router.get('/stats', async (req, res) => {
-  const [
-    rooms,
-    agents,
-    messages24h,
-    discussions24h,
-    health
-  ] = await Promise.all([
+  const [rooms, agents, messages24h, discussions24h, health] = await Promise.all([
     prisma.room.findMany({ include: { _count: { select: { agents: true, messages: true } } } }),
     prisma.agent.findMany({ include: { _count: { select: { messages: true } } } }),
     prisma.message.count({
-      where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }
+      where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
     }),
     prisma.discussion.count({
-      where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }
+      where: { createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
     }),
-    getHealthStatus() // Custom health check function
+    getHealthStatus(), // Custom health check function
   ]);
 
   res.json({
     rooms: {
       total: rooms.length,
-      active: rooms.filter(r => r.settings).length
+      active: rooms.filter((r) => r.settings).length,
     },
     agents: {
       total: agents.length,
-      active: agents.filter(a => a.talkativeness > 0).length
+      active: agents.filter((a) => a.talkativeness > 0).length,
     },
     messages: { last24h: messages24h },
     discussions: { last24h: discussions24h },
     health,
     metrics: {
       avgResponseTime: await getAverageResponseTime(),
-      websocketClients: getIO()?.engine?.clientsCount || 0
+      websocketClients: getIO()?.engine?.clientsCount || 0,
     },
-    recentActivity: await getRecentActivity(10)
+    recentActivity: await getRecentActivity(10),
   });
 });
 
@@ -903,11 +902,11 @@ router.get('/rooms', async (req, res) => {
         select: {
           agents: true,
           messages: true,
-          discussions: true
-        }
-      }
+          discussions: true,
+        },
+      },
     },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
   });
   res.json(rooms);
 });
@@ -920,8 +919,8 @@ router.delete('/rooms/:id', async (req, res) => {
     include: {
       agents: true,
       messages: true,
-      discussions: true
-    }
+      discussions: true,
+    },
   });
   res.json({ success: true });
 });
@@ -934,9 +933,9 @@ router.get('/agents/:id', async (req, res) => {
       relationshipsAsA: true,
       relationshipsAsB: true,
       _count: {
-        select: { messages: true }
-      }
-    }
+        select: { messages: true },
+      },
+    },
   });
   res.json(agent);
 });
@@ -945,7 +944,7 @@ router.get('/agents/:id', async (req, res) => {
 router.put('/agents/:id', async (req, res) => {
   const { id } = req.params;
   const { name, role, avatar, talkativeness, empathy, curiosity } = req.body;
-  
+
   const agent = await prisma.agent.update({
     where: { id },
     data: {
@@ -954,10 +953,10 @@ router.put('/agents/:id', async (req, res) => {
       avatar,
       talkativeness,
       empathy,
-      curiosity
-    }
+      curiosity,
+    },
   });
-  
+
   res.json(agent);
 });
 
@@ -971,12 +970,14 @@ export default router;
 ### Week 1: Typing Indicators (6-8 hours)
 
 **Day 1**: Backend WebSocket Events (3-4 hours)
+
 - Add `typing:start` and `typing:stop` events to MessageService.ts
 - Test WebSocket event emission
 - Handle multiple agents typing simultaneously
 - **Deliverable**: Typing events working in backend
 
 **Day 2**: Frontend Typing Component (3-4 hours)
+
 - Create TypingIndicator component
 - Add WebSocket listeners for typing events
 - Integrate into chat UI
@@ -986,12 +987,14 @@ export default router;
 ### Week 2: Read Receipts (6-8 hours)
 
 **Day 1-2**: Database + API (4 hours)
+
 - Add MessageRead and UserRoomRead models to schema
 - Run Prisma migration
 - Create API endpoints (unread-count, mark-as-read)
 - **Deliverable**: API endpoints working
 
 **Day 3-4**: Frontend Integration (4 hours)
+
 - Create useReadReceipts hook
 - Add UnreadBadge component
 - Integrate into RoomList and ChatFooter
@@ -1001,6 +1004,7 @@ export default router;
 ### Week 3: Admin Dashboard (6-8 hours)
 
 **Day 1-2**: Dashboard Layout + Stats (4 hours)
+
 - Create /admin route structure
 - Build dashboard page with metrics cards
 - Add health status cards
@@ -1008,6 +1012,7 @@ export default router;
 - **Deliverable**: Dashboard showing system stats
 
 **Day 3-4**: Room + Agent Management (4 hours)
+
 - Build room list + CRUD operations
 - Build agent edit page with trait sliders
 - Add relationship editor
@@ -1019,6 +1024,7 @@ export default router;
 ## 5. Success Criteria
 
 ### Typing Indicators ✅
+
 - [ ] Typing indicator appears immediately when agent starts generating
 - [ ] Shows agent name and avatar
 - [ ] Disappears when response is ready
@@ -1027,6 +1033,7 @@ export default router;
 - [ ] Works on both Web UI and Feishu (text status)
 
 ### Read Receipts ✅
+
 - [ ] Unread count badge shows on rooms with unread messages
 - [ ] Messages auto-mark as read when user focuses chat
 - [ ] Read status syncs across devices via WebSocket
@@ -1035,6 +1042,7 @@ export default router;
 - [ ] Database indexes optimize read queries
 
 ### Admin Dashboard ✅
+
 - [ ] Dashboard shows real-time system health
 - [ ] Room list with message/agent counts
 - [ ] Create/edit/delete rooms
@@ -1085,29 +1093,32 @@ CREATE INDEX "UserRoomRead_roomId_userId_idx" ON "UserRoomRead"("roomId", "userI
 
 ## 7. Risks & Mitigations
 
-| Risk | Impact | Likelihood | Mitigation |
-|------|--------|------------|------------|
-| Typing indicators spam (flickering) | Medium | Medium | Debounce typing events, minimum 2s display |
-| Read receipts performance (large rooms) | High | Medium | Pagination, batch updates, indexed queries |
-| Admin dashboard exposes sensitive data | High | Low | JWT authentication, role-based access control |
-| WebSocket overload (many users reading) | Medium | Low | Throttle read:update events, batch updates |
-| Database bloat (MessageRead table) | Medium | Medium | Archive old reads, cleanup job monthly |
+| Risk                                    | Impact | Likelihood | Mitigation                                    |
+| --------------------------------------- | ------ | ---------- | --------------------------------------------- |
+| Typing indicators spam (flickering)     | Medium | Medium     | Debounce typing events, minimum 2s display    |
+| Read receipts performance (large rooms) | High   | Medium     | Pagination, batch updates, indexed queries    |
+| Admin dashboard exposes sensitive data  | High   | Low        | JWT authentication, role-based access control |
+| WebSocket overload (many users reading) | Medium | Low        | Throttle read:update events, batch updates    |
+| Database bloat (MessageRead table)      | Medium | Medium     | Archive old reads, cleanup job monthly        |
 
 ---
 
 ## 8. Future Enhancements (P2/P3)
 
 ### Typing Indicators
+
 - **Custom messages**: "Mom is thinking about dinner..."
 - **Typing speed indicator**: Fast/slow based on actual typing
 - **Agent mood**: Different animations for different agents
 
 ### Read Receipts
+
 - **Per-message read status**: Show which users read each message
 - **Read timestamps**: "Read at 11:30 AM"
 - **Read receipts for Feishu**: Sync with Feishu read status
 
 ### Admin Dashboard
+
 - **Analytics charts**: Message volume over time, heat trends
 - **User management**: Ban/mute users, view user history
 - **Discussion viewer**: Browse all discussions with filters
@@ -1119,6 +1130,7 @@ CREATE INDEX "UserRoomRead_roomId_userId_idx" ON "UserRoomRead"("roomId", "userI
 ## 9. Files to Create/Modify
 
 ### Backend
+
 ```
 server/src/
 ├── routes/
@@ -1132,6 +1144,7 @@ server/src/
 ```
 
 ### Frontend
+
 ```
 client/app/
 ├── admin/
@@ -1157,6 +1170,7 @@ client/app/
 ```
 
 ### Database
+
 ```
 prisma/
 ├── schema.prisma                   # MODIFY: Add MessageRead, UserRoomRead

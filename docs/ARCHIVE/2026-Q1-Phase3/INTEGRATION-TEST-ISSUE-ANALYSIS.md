@@ -3,15 +3,17 @@
 ## Problem Statement
 
 Integration tests fail with TypeScript error:
+
 ```
-error TS1343: The 'import.meta' meta-property is only allowed when the 
-'--module' option is 'es2020', 'es2022', 'esnext', 'system', 'node16', 
+error TS1343: The 'import.meta' meta-property is only allowed when the
+'--module' option is 'es2020', 'es2022', 'esnext', 'system', 'node16',
 'node18', 'node20', or 'nodenext'.
 ```
 
 ## Root Cause Analysis
 
 ### 1. Our Codebase Uses ES Modules
+
 ```typescript
 // server/src/index.ts
 import { fileURLToPath } from 'url';
@@ -19,21 +21,26 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 ```
 
 ### 2. ts-jest Configuration Conflict
+
 ```javascript
 // server/jest.config.js
 export default {
   preset: 'ts-jest',
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: 'server/tsconfig.json',
-      useESM: true,  // ← Enabled but has limitations
-    }],
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        tsconfig: 'server/tsconfig.json',
+        useESM: true, // ← Enabled but has limitations
+      },
+    ],
   },
   extensionsToTreatAsEsm: ['.ts'],
-}
+};
 ```
 
 ### 3. The Conflict
+
 - ts-jest's `useESM: true` is experimental
 - `import.meta.url` requires Node.js ESM loader
 - Jest runs in its own VM context, not Node.js native ESM
@@ -56,6 +63,7 @@ npx jest --config=server/jest.config.js server/src/routes/__tests__/messages.tes
 ### Option A: Remove import.meta.url from index.ts ⭐ RECOMMENDED
 
 **Change**: Use Node.js native `__dirname` instead
+
 ```typescript
 // Before (ES module style)
 import { fileURLToPath } from 'url';
@@ -68,11 +76,13 @@ const __dirname = path.dirname(__filename);
 ```
 
 **Pros**:
+
 - Simple fix (5 lines of code)
 - No breaking changes
 - Works with both Jest and production
 
 **Cons**:
+
 - Mixes CommonJS and ES module patterns
 - TypeScript may warn about `__dirname` not existing in ES modules
 
@@ -81,6 +91,7 @@ const __dirname = path.dirname(__filename);
 ### Option B: Separate Test Entry Point
 
 **Change**: Create test-specific app export without import.meta
+
 ```typescript
 // server/src/test-app.ts (for Jest only)
 import express from 'express';
@@ -89,10 +100,12 @@ export const app = express();
 ```
 
 **Pros**:
+
 - Clean separation of concerns
 - No changes to production code
 
 **Cons**:
+
 - Duplicate code
 - Test environment differs from production
 - Already attempted (module resolution issues)
@@ -102,6 +115,7 @@ export const app = express();
 ### Option C: Switch ts-jest to @swc/jest ⭐ ALTERNATIVE
 
 **Change**: Use SWC compiler instead of ts-jest
+
 ```javascript
 // package.json
 {
@@ -120,11 +134,13 @@ module.exports = {
 ```
 
 **Pros**:
+
 - Much faster (10-20x speedup)
 - Better ES module support
 - Actively maintained
 
 **Cons**:
+
 - New dependency
 - Slightly different behavior than TypeScript
 - May need configuration tuning
@@ -134,6 +150,7 @@ module.exports = {
 ### Option D: Use Node.js Native Test Runner
 
 **Change**: Switch from Jest to Node.js native test runner
+
 ```typescript
 // Node 18+ native test runner
 import { test } from 'node:test';
@@ -145,11 +162,13 @@ test('API endpoint', async () => {
 ```
 
 **Pros**:
+
 - No configuration needed
 - Native ES module support
 - Built into Node.js
 
 **Cons**:
+
 - Different API than Jest
 - Less mature ecosystem
 - Migration effort for existing tests
@@ -159,15 +178,18 @@ test('API endpoint', async () => {
 ### Option E: Dynamic import() for index.ts
 
 **Change**: Use dynamic import in tests
+
 ```typescript
 // In test file
 const { app } = await import('../../index.js');
 ```
 
 **Pros**:
+
 - No changes to production code
 
 **Cons**:
+
 - Async imports complicate test setup
 - Still may hit ESM loader issues
 
@@ -176,11 +198,13 @@ const { app } = await import('../../index.js');
 ## Recommended Solution: Option A + C
 
 ### Phase 1: Quick Fix (Option A)
+
 1. Update index.ts to handle both Jest and production
 2. Run integration tests immediately
 3. Minimal code changes
 
 ### Phase 2: Performance Upgrade (Option C)
+
 1. Install @swc/jest
 2. Update Jest config
 3. Benchmark performance
@@ -247,6 +271,7 @@ Which approach should we take?
 4. **Defer**: Accept current limitation, focus on other work
 
 **My Recommendation**: Option A (quick fix) + Option C (performance upgrade)
+
 - Get integration tests working now
 - Improve performance as bonus
 - Total time: <1 hour
