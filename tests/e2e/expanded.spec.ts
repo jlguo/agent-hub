@@ -13,6 +13,9 @@
 
 import { test, expect } from '@playwright/test';
 
+// Increase default timeout for all tests (agent responses take time)
+test.setTimeout(60000);
+
 test.describe('Agent Hub E2E - Expanded', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the app

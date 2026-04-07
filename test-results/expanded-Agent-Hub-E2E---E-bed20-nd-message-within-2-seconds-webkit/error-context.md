@@ -327,7 +327,7 @@
                     - generic [ref=e429]: /discuss 周末去哪里玩
                     - generic [ref=e430]: 4:35:51 PM
             - generic [ref=e432]:
-                - textbox "Type a message..." [active] [ref=e433]: Performance test 1775551070068
+                - textbox "Type a message..." [active] [ref=e433]: Performance test 1775574765965
                 - button "Send" [ref=e434] [cursor=pointer]:
                     - img [ref=e435]
                     - text: Send
