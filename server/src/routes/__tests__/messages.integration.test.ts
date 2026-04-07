@@ -21,6 +21,9 @@ let app: any;
 let server: Server;
 
 beforeAll(async () => {
+  // Setup test database first
+  await setupTestDatabase();
+
   // Create app instance for testing (isolated from production server)
   app = createApp();
 

@@ -18,6 +18,7 @@ const TEST_DB_PATH = './prisma/test.db';
 
 /**
  * Create a fresh test database
+ * Simplified for faster test initialization
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function setupTestDatabase(): Promise<void> {
@@ -27,8 +28,8 @@ export async function setupTestDatabase(): Promise<void> {
     // Remove existing test database if it exists
     await execAsync(`rm -f ${TEST_DB_PATH}`);
 
-    // Run migrations on test database
-    await execAsync(`DATABASE_URL=file:${TEST_DB_PATH} npx prisma migrate dev --name test_init`);
+    // Use db push instead of migrate for faster setup (schema only, no migration history)
+    await execAsync(`DATABASE_URL=file:${TEST_DB_PATH} npx prisma db push`);
 
     console.log('✅ Test database created successfully');
   } catch (error: any) {
