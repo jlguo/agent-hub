@@ -14,15 +14,22 @@ import request from 'supertest';
 import { prisma } from '../../index';
 import { setupTestDatabase, cleanupTestDatabase, withTestDatabase } from '../../test/database';
 import { createTestAgentData, createTestRoomData } from '../../test/test-utils';
+import { createApp } from '../../index';
+import { Server } from 'http';
 
 let app: any;
-let server: any;
+let server: Server;
 
 beforeAll(async () => {
-  // Import app after mocks are set up
-  const { app: appInstance, httpServer } = await import('../../index');
-  app = appInstance;
-  server = httpServer;
+  // Create app instance for testing (isolated from production server)
+  app = createApp();
+
+  // Start test server
+  await new Promise<void>((resolve) => {
+    server = app.listen(0, () => {
+      resolve();
+    });
+  });
 
   // Setup test database
   await setupTestDatabase();

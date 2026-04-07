@@ -274,18 +274,43 @@ header {
   font-size: 1rem;
   padding: 0 0.5rem;
 }
-</style></head><body><main class="jesthtml-content"><header><h1 id="title">Agent Hub Unit Tests</h1></header><section id="metadata-container"><div id="timestamp">Started: 2026-04-07 09:50:25</div><div id="summary"><div id="suite-summary"><div class="summary-total">Suites (1)</div><div class="summary-passed  summary-empty">0 passed</div><div class="summary-failed ">1 failed</div><div class="summary-pending  summary-empty">0 pending</div></div><div id="test-summary"><div class="summary-total">Tests (0)</div><div class="summary-passed  summary-empty">0 passed</div><div class="summary-failed  summary-empty">0 failed</div><div class="summary-pending  summary-empty">0 pending</div></div></div></section><details id="suite-1" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/jlguo/agent-hub/server/src/routes/__tests__/messages.integration.test.ts</div><div class="suite-time">0s</div></summary><div class="suite-tests"><div class="test-result failed"><div class="failureMessages suiteFailure"> <pre class="failureMsg">  ● Test suite failed to run
+</style></head><body><main class="jesthtml-content"><header><h1 id="title">Agent Hub Unit Tests</h1></header><section id="metadata-container"><div id="timestamp">Started: 2026-04-07 13:02:27</div><div id="summary"><div id="suite-summary"><div class="summary-total">Suites (1)</div><div class="summary-passed  summary-empty">0 passed</div><div class="summary-failed ">1 failed</div><div class="summary-pending  summary-empty">0 pending</div></div><div id="test-summary"><div class="summary-total">Tests (0)</div><div class="summary-passed  summary-empty">0 passed</div><div class="summary-failed  summary-empty">0 failed</div><div class="summary-pending  summary-empty">0 pending</div></div></div></section><details id="suite-1" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/jlguo/agent-hub/server/src/routes/__tests__/messages.integration.test.ts</div><div class="suite-time">0s</div></summary><div class="suite-tests"><div class="test-result failed"><div class="failureMessages suiteFailure"> <pre class="failureMsg">  ● Test suite failed to run
 
-    TypeError: (0 , socket_js_1.initializeIO) is not a function
+    server/src/test/database.ts:115:11 - error TS2322: Type 'Record&lt;string, unknown&gt;' is not assignable to type '(Without&lt;RoomCreateInput, RoomUncheckedCreateInput&gt; &amp; RoomUncheckedCreateInput) | (Without&lt;...&gt; &amp; RoomCreateInput)'.
+      Type 'Record&lt;string, unknown&gt;' is not assignable to type 'Without&lt;RoomUncheckedCreateInput, RoomCreateInput&gt; &amp; RoomCreateInput'.
+        Property 'name' is missing in type 'Record&lt;string, unknown&gt;' but required in type 'RoomCreateInput'.
 
-      37 |
-      38 | // Initialize Socket.io
-    &gt; 39 | const io = initializeIO(httpServer);
-         |                        ^
-      40 | export { io };
-      41 |
-      42 | // Middleware
+    115           data: room,
+                  ~~~~
 
-      at Object.&lt;anonymous&gt; (server/src/index.ts:39:24)
-      at Object.&lt;anonymous&gt; (server/src/routes/__tests__/messages.integration.test.ts:14:1)
+      node_modules/.prisma/client/index.d.ts:9197:5
+        9197     name: string
+                 ~~~~
+        'name' is declared here.
+      node_modules/.prisma/client/index.d.ts:2438:5
+        2438     data: XOR&lt;RoomCreateInput, RoomUncheckedCreateInput&gt;
+                 ~~~~
+        The expected type comes from property 'data' which is declared here on type '{ select?: RoomSelect&lt;DefaultArgs&gt; | null | undefined; omit?: RoomOmit&lt;DefaultArgs&gt; | null | undefined; include?: RoomInclude&lt;DefaultArgs&gt; | null | undefined; data: (Without&lt;...&gt; &amp; RoomUncheckedCreateInput) | (Without&lt;...&gt; &amp; RoomCreateInput); }'
+    server/src/test/database.ts:124:11 - error TS2322: Type 'Record&lt;string, unknown&gt;' is not assignable to type '(Without&lt;AgentCreateInput, AgentUncheckedCreateInput&gt; &amp; AgentUncheckedCreateInput) | (Without&lt;...&gt; &amp; AgentCreateInput)'.
+      Type 'Record&lt;string, unknown&gt;' is not assignable to type 'Without&lt;AgentUncheckedCreateInput, AgentCreateInput&gt; &amp; AgentCreateInput'.
+        Type 'Record&lt;string, unknown&gt;' is missing the following properties from type 'AgentCreateInput': name, role, room
+
+    124           data: agent,
+                  ~~~~
+
+      node_modules/.prisma/client/index.d.ts:3746:5
+        3746     data: XOR&lt;AgentCreateInput, AgentUncheckedCreateInput&gt;
+                 ~~~~
+        The expected type comes from property 'data' which is declared here on type '{ select?: AgentSelect&lt;DefaultArgs&gt; | null | undefined; omit?: AgentOmit&lt;DefaultArgs&gt; | null | undefined; include?: AgentInclude&lt;DefaultArgs&gt; | null | undefined; data: (Without&lt;...&gt; &amp; AgentUncheckedCreateInput) | (Without&lt;...&gt; &amp; AgentCreateInput); }'
+    server/src/test/database.ts:133:11 - error TS2322: Type 'Record&lt;string, unknown&gt;' is not assignable to type '(Without&lt;RelationshipCreateInput, RelationshipUncheckedCreateInput&gt; &amp; RelationshipUncheckedCreateInput) | (Without&lt;...&gt; &amp; RelationshipCreateInput)'.
+      Type 'Record&lt;string, unknown&gt;' is not assignable to type 'Without&lt;RelationshipUncheckedCreateInput, RelationshipCreateInput&gt; &amp; RelationshipCreateInput'.
+        Type 'Record&lt;string, unknown&gt;' is missing the following properties from type 'RelationshipCreateInput': type, agentA, agentB
+
+    133           data: relationship,
+                  ~~~~
+
+      node_modules/.prisma/client/index.d.ts:4942:5
+        4942     data: XOR&lt;RelationshipCreateInput, RelationshipUncheckedCreateInput&gt;
+                 ~~~~
+        The expected type comes from property 'data' which is declared here on type '{ select?: RelationshipSelect&lt;DefaultArgs&gt; | null | undefined; omit?: RelationshipOmit&lt;DefaultArgs&gt; | null | undefined; include?: RelationshipInclude&lt;...&gt; | ... 1 more ... | undefined; data: (Without&lt;...&gt; &amp; RelationshipUncheckedCreateInput) | (Without&lt;...&gt; &amp; RelationshipCreateInput); }'
 </pre></div></div></div></details></main></body></html>
