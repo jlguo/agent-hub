@@ -1,7 +1,15 @@
 import { prisma } from '../lib/prisma.js';
 import { getIO } from '../lib/socket.js';
 import { OpenClawService, AgentContext } from './OpenClawService.js';
-import { Agent } from '@prisma/client';
+import { Agent, Relationship } from '@prisma/client';
+
+/**
+ * Extended Agent type with relationships included
+ */
+type AgentWithRelationships = Agent & {
+  relationshipsAsA: Relationship[];
+  relationshipsAsB: Relationship[];
+};
 
 /**
  * Discussion Configuration
@@ -45,14 +53,14 @@ async function selectDiscussionParticipants(
   topic: string,
   roomId: string,
   count: number = 3
-): Promise<Agent[]> {
-  const allAgents = await prisma.agent.findMany({
+): Promise<AgentWithRelationships[]> {
+  const allAgents = (await prisma.agent.findMany({
     where: { roomId },
     include: {
       relationshipsAsA: true,
       relationshipsAsB: true,
     },
-  });
+  })) as AgentWithRelationships[];
 
   if (allAgents.length <= count) {
     return allAgents;

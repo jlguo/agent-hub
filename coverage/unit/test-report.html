@@ -274,14 +274,18 @@ header {
   font-size: 1rem;
   padding: 0 0.5rem;
 }
-</style></head><body><main class="jesthtml-content"><header><h1 id="title">Agent Hub Unit Tests</h1></header><section id="metadata-container"><div id="timestamp">Started: 2026-04-07 09:07:09</div><div id="summary"><div id="suite-summary"><div class="summary-total">Suites (1)</div><div class="summary-passed  summary-empty">0 passed</div><div class="summary-failed ">1 failed</div><div class="summary-pending  summary-empty">0 pending</div></div><div id="test-summary"><div class="summary-total">Tests (0)</div><div class="summary-passed  summary-empty">0 passed</div><div class="summary-failed  summary-empty">0 failed</div><div class="summary-pending  summary-empty">0 pending</div></div></div></section><details id="suite-1" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/jlguo/agent-hub/server/src/routes/__tests__/messages.integration.test.ts</div><div class="suite-time">0s</div></summary><div class="suite-tests"><div class="test-result failed"><div class="failureMessages suiteFailure"> <pre class="failureMsg">  ● Test suite failed to run
+</style></head><body><main class="jesthtml-content"><header><h1 id="title">Agent Hub Unit Tests</h1></header><section id="metadata-container"><div id="timestamp">Started: 2026-04-07 09:50:25</div><div id="summary"><div id="suite-summary"><div class="summary-total">Suites (1)</div><div class="summary-passed  summary-empty">0 passed</div><div class="summary-failed ">1 failed</div><div class="summary-pending  summary-empty">0 pending</div></div><div id="test-summary"><div class="summary-total">Tests (0)</div><div class="summary-passed  summary-empty">0 passed</div><div class="summary-failed  summary-empty">0 failed</div><div class="summary-pending  summary-empty">0 pending</div></div></div></section><details id="suite-1" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/jlguo/agent-hub/server/src/routes/__tests__/messages.integration.test.ts</div><div class="suite-time">0s</div></summary><div class="suite-tests"><div class="test-result failed"><div class="failureMessages suiteFailure"> <pre class="failureMsg">  ● Test suite failed to run
 
-    server/src/services/MessageService.ts:192:31 - error TS2339: Property 'relationshipsAsA' does not exist on type '{ id: string; name: string; createdAt: Date; updatedAt: Date; roomId: string; isActive: boolean; role: string; avatar: string | null; talkativeness: number; empathy: number; curiosity: number; systemPrompt: string | null; responseDelay: number; } &amp; { ...; }'.
+    TypeError: (0 , socket_js_1.initializeIO) is not a function
 
-    192           ...(respondingAgent.relationshipsAsA || []),
-                                      ~~~~~~~~~~~~~~~~
-    server/src/services/MessageService.ts:193:31 - error TS2339: Property 'relationshipsAsB' does not exist on type '{ id: string; name: string; createdAt: Date; updatedAt: Date; roomId: string; isActive: boolean; role: string; avatar: string | null; talkativeness: number; empathy: number; curiosity: number; systemPrompt: string | null; responseDelay: number; } &amp; { ...; }'.
+      37 |
+      38 | // Initialize Socket.io
+    &gt; 39 | const io = initializeIO(httpServer);
+         |                        ^
+      40 | export { io };
+      41 |
+      42 | // Middleware
 
-    193           ...(respondingAgent.relationshipsAsB || []),
-                                      ~~~~~~~~~~~~~~~~
+      at Object.&lt;anonymous&gt; (server/src/index.ts:39:24)
+      at Object.&lt;anonymous&gt; (server/src/routes/__tests__/messages.integration.test.ts:14:1)
 </pre></div></div></div></details></main></body></html>

@@ -1,7 +1,15 @@
 import { prisma } from '../lib/prisma.js';
 import { getIO } from '../lib/socket.js';
 import { OpenClawService, AgentContext } from './OpenClawService.js';
-import { Agent } from '@prisma/client';
+import { Agent, Relationship } from '@prisma/client';
+
+/**
+ * Extended Agent type with relationships included
+ */
+type AgentWithRelationships = Agent & {
+  relationshipsAsA: Relationship[];
+  relationshipsAsB: Relationship[];
+};
 
 /**
  * Heat System Configuration
@@ -78,10 +86,12 @@ function setCooldown(agentId: string) {
  */
 function selectAgentsWithMention(
   message: string,
-  agents: Agent[]
-): Array<Agent & { selectedByMention: boolean; isFallback?: boolean }> {
+  agents: AgentWithRelationships[]
+): Array<AgentWithRelationships & { selectedByMention: boolean; isFallback?: boolean }> {
   const mentions = parseMentions(message);
-  const selectedAgents: Array<Agent & { selectedByMention: boolean; isFallback?: boolean }> = [];
+  const selectedAgents: Array<
+    AgentWithRelationships & { selectedByMention: boolean; isFallback?: boolean }
+  > = [];
 
   if (mentions.length > 0) {
     // Find agents that match @mentions
@@ -153,13 +163,13 @@ export async function triggerAgentResponse(
     console.log(`[MessageService] Triggering agent response for room ${roomId}`);
 
     // 1. Get all agents in room
-    const agents = await prisma.agent.findMany({
+    const agents = (await prisma.agent.findMany({
       where: { roomId },
       include: {
         relationshipsAsA: true,
         relationshipsAsB: true,
       },
-    });
+    })) as AgentWithRelationships[];
 
     if (agents.length === 0) {
       console.warn(`[MessageService] No agents found in room ${roomId}`);
