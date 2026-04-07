@@ -23,8 +23,7 @@ services:
     volumes:
       - backend-data:/app/prisma
     init: true  # Use init process to handle zombie processes
-    user: root  # Start as root to set permissions, then drop privileges
-    entrypoint: ["/bin/sh", "-c", "chown -R nodeuser:nodejs /app/prisma && su-exec nodeuser docker-entrypoint.sh"]
+    # Note: Container runs as nodeuser (UID 1001), volume permissions set in Dockerfile
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:4000/health"]
       interval: 30s

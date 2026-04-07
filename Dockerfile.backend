@@ -25,6 +25,9 @@ RUN npx prisma generate
 # Stage 3: Production image (uses tsx watch for development)
 FROM node:20-alpine AS production
 
+# Install su-exec for privilege dropping
+RUN apk add --no-cache su-exec
+
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodeuser
@@ -35,17 +38,14 @@ COPY --from=builder /app/server ./server
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
 
-# Create app directory and set ownership
-RUN mkdir -p /app && chown -R nodeuser:nodejs /app
-
-# Create prisma directory with write permissions
-RUN mkdir -p /app/prisma && chown -R nodeuser:nodejs /app/prisma
+# Create prisma directory with correct permissions for volume mount
+# This ensures the directory is writable even when Docker creates a volume
+RUN mkdir -p /app/prisma && \
+    chmod 777 /app/prisma && \
+    chown -R nodeuser:nodejs /app
 
 USER nodeuser
 WORKDIR /app
-
-# Note: Database file will be created at runtime with correct permissions
-# Volume mounts in docker-compose.yml handle persistence
 
 # Expose port
 EXPOSE 4000
