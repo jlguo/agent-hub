@@ -25,6 +25,9 @@ RUN npx prisma generate
 # Stage 3: Production image (uses tsx watch for development)
 FROM node:20-alpine AS production
 
+# Set working directory FIRST before any COPY commands
+WORKDIR /app
+
 # Install su-exec for privilege dropping
 RUN apk add --no-cache su-exec
 
@@ -37,12 +40,19 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/server ./server
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
+# Create server/prisma directory and copy schema.prisma from build context
+RUN mkdir -p /app/server/prisma
+COPY prisma/schema.prisma ./server/prisma/schema.prisma
 
 # Create prisma directory with correct permissions for volume mount
 # This ensures the directory is writable even when Docker creates a volume
 RUN mkdir -p /app/prisma && \
     chmod 777 /app/prisma && \
     chown -R nodeuser:nodejs /app
+
+# Copy entrypoint script for database initialization
+COPY docker/docker-entrypoint-initdb.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint-initdb.sh
 
 USER nodeuser
 WORKDIR /app

@@ -7,10 +7,13 @@ services:
       dockerfile: Dockerfile.backend
     ports:
       - "4000:4000"
+    env_file:
+      - .env
     environment:
       - NODE_ENV=production
-      - OPENCLAW_MODE=http
-      - OPENCLAW_GATEWAY_URL=http://host.docker.internal:18789
+      - DATABASE_URL=file:/app/prisma/dev.db
+      - OPENCLAW_MODE=${OPENCLAW_MODE:-cli}
+      - OPENCLAW_GATEWAY_URL=${OPENCLAW_GATEWAY_URL:-http://host.docker.internal:18789}
       - OPENCLAW_VERIFICATION_TOKEN=${OPENCLAW_VERIFICATION_TOKEN}
       - FEISHU_APP_ID=${FEISHU_APP_ID}
       - FEISHU_APP_SECRET=${FEISHU_APP_SECRET}
@@ -21,9 +24,11 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
+      # Named volume for persistent database storage
       - backend-data:/app/prisma
-    init: true  # Use init process to handle zombie processes
-    # Note: Container runs as nodeuser (UID 1001), volume permissions set in Dockerfile
+    # Use custom entrypoint for database initialization
+    entrypoint: ["/usr/local/bin/docker-entrypoint-initdb.sh"]
+    init: true
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:4000/health"]
       interval: 30s
