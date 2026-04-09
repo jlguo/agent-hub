@@ -1,6 +1,35 @@
 #!/bin/sh
 set -e
 
+echo "🔐 Starting SSH tunnel for OpenClaw remote mode..."
+
+# Start SSH tunnel if OPENCLAW_MODE is remote
+if [ "$OPENCLAW_MODE" = "remote" ]; then
+  # Kill any existing tunnel
+  pkill -f 'ssh.*-L.*18789' 2>/dev/null || true
+  
+  # Start persistent SSH tunnel with auto-reconnect
+  ssh -f -N \
+    -o ServerAliveInterval=30 \
+    -o ServerAliveCountMax=3 \
+    -o StrictHostKeyChecking=no \
+    -o UserKnownHostsFile=/dev/null \
+    -o ExitOnForwardFailure=yes \
+    -i /home/nodeuser/.ssh/id_ed25519 \
+    -L 18789:127.0.0.1:18789 \
+    root@host.docker.internal 2>&1 || echo "⚠️  SSH tunnel startup warning (may already be running)"
+  
+  # Wait for tunnel to establish
+  sleep 3
+  
+  # Verify tunnel
+  if pgrep -f "ssh.*-L.*18789" > /dev/null; then
+    echo "✅ SSH tunnel started (PID: $(pgrep -f 'ssh.*-L.*18789'))"
+  else
+    echo "⚠️  SSH tunnel may not have started, continuing anyway..."
+  fi
+fi
+
 # Initialize database if empty or doesn't have tables
 if [ ! -f /app/prisma/dev.db ] || [ ! -s /app/prisma/dev.db ]; then
   echo "📦 Database file missing or empty, initializing..."

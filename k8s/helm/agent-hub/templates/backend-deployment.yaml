@@ -109,9 +109,20 @@ spec:
         {{- if .Values.backend.volumeMounts }}
         {{- toYaml .Values.backend.volumeMounts | nindent 8 }}
         {{- end }}
+        {{- if .Values.sshKey.enabled }}
+        - name: ssh-key
+          mountPath: /home/nodeuser/.ssh
+          readOnly: true
+        {{- end }}
       volumes:
       {{- if .Values.volumes }}
       {{- toYaml .Values.volumes | nindent 6 }}
+      {{- end }}
+      {{- if .Values.sshKey.enabled }}
+      - name: ssh-key
+        secret:
+          secretName: {{ .Values.sshKey.secretName }}
+          defaultMode: 0400
       {{- end }}
       {{- with .Values.backend.nodeSelector }}
       nodeSelector:

@@ -12,9 +12,11 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/app/prisma/dev.db
-      - OPENCLAW_MODE=${OPENCLAW_MODE:-cli}
-      - OPENCLAW_GATEWAY_URL=${OPENCLAW_GATEWAY_URL:-http://host.docker.internal:18789}
+      - OPENCLAW_MODE=remote
+      - OPENCLAW_GATEWAY_URL=ws://127.0.0.1:18789
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
       - OPENCLAW_VERIFICATION_TOKEN=${OPENCLAW_VERIFICATION_TOKEN}
+      - OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1
       - FEISHU_APP_ID=${FEISHU_APP_ID}
       - FEISHU_APP_SECRET=${FEISHU_APP_SECRET}
       - FEISHU_CHAT_ID=${FEISHU_CHAT_ID}
@@ -26,6 +28,8 @@ services:
     volumes:
       # Named volume for persistent database storage
       - backend-data:/app/prisma
+      # SSH key for remote OpenClaw Gateway access (Option 1: Volume Mount)
+      - ${SSH_KEY_PATH:-~/.ssh/agent-hub}:/home/nodeuser/.ssh:ro
     # Use custom entrypoint for database initialization
     entrypoint: ["/usr/local/bin/docker-entrypoint-initdb.sh"]
     init: true

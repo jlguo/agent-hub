@@ -195,3 +195,8 @@ secrets:
   
   # Monitoring
   SENTRY_DSN: ""
+
+# SSH Key configuration for OpenClaw remote mode (Option 2: Kubernetes Secrets)
+sshKey:
+  enabled: true
+  secretName: "agent-hub-ssh-key"
