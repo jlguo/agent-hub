@@ -12,10 +12,37 @@ TypeError: (0 , OpenClawService_js_1.createOpenClawService) is not a function
 
 ## Root Cause
 
-1. **ES Module Behavior**: Top-level code executes immediately on import
-2. **Singleton Pattern**: Module-level singleton instantiation runs before Jest can apply mocks
-3. **ts-jest Limitation**: ES module support in ts-jest is experimental and has known compatibility issues
-4. **Import Resolution**: Jest's module system doesn't properly resolve TypeScript ES module exports
+**Confirmed via debugging (2026-04-10):** ts-jest compilation bug drops named exports.
+
+```bash
+# Runtime (tsx/Node.js) - All exports present ✅
+$ npx tsx -e "import('./src/services/OpenClawService.js').then(m => console.log(Object.keys(m)))"
+Exports: [ 'OpenClawService', 'createOpenClawService', 'openClawService' ]
+
+# Jest/ts-jest - Named exports dropped ❌
+Module keys: [ 'OpenClawService', 'default' ]
+# createOpenClawService: undefined
+# openClawService: undefined
+```
+
+**Technical Details:**
+
+1. TypeScript source has correct exports (verified via grep)
+2. Runtime execution works perfectly (verified via tsx)
+3. ts-jest compilation drops named exports (only preserves class + default)
+4. This is a ts-jest transformer bug, not a code issue
+
+**Attempts Made:**
+
+- ✅ Factory pattern (`createOpenClawService()`)
+- ✅ Class exports (`export class OpenClawService`)
+- ✅ Named imports, namespace imports, dynamic imports
+- ✅ `jest.resetModules()`, `jest.clearAllMocks()`
+- ✅ ts-jest ESM preset (`ts-jest/presets/default-esm`)
+- ✅ TypeScript `moduleResolution: "bundler"`
+- ✅ Various Jest config options (`useESM`, `isolatedModules`)
+
+**Result:** All attempts fail - ts-jest cannot compile ES module named exports correctly.
 
 ## Verification
 
@@ -55,15 +82,44 @@ Use **integration tests** and **E2E tests** for verification:
 
 ## Solutions Attempted
 
+### Code Refactoring (All Completed ✅)
+
 1. ✅ Factory pattern (`createOpenClawService()`)
 2. ✅ Class exports (`export class OpenClawService`)
-3. ✅ Named imports (`import { createOpenClawService }`)
-4. ✅ Namespace imports (`import * as Module`)
-5. ✅ Dynamic imports (`await import()`)
-6. ✅ `jest.resetModules()` for isolation
-7. ✅ `jest.clearAllMocks()` between tests
+3. ✅ Singleton maintained for backward compatibility
+4. ✅ Full TypeScript interfaces
 
-**Result**: All attempts fail due to fundamental Jest + ESM incompatibility.
+### Import Strategies (All Tested ❌)
+
+5. ✅ Named imports: `import { createOpenClawService }`
+6. ✅ Namespace imports: `import * as Module`
+7. ✅ Dynamic imports: `await import()`
+8. ✅ Mixed approaches
+
+### Jest Configuration (All Tested ❌)
+
+9. ✅ `jest.resetModules()` for isolation
+10. ✅ `jest.clearAllMocks()` between tests
+11. ✅ ts-jest ESM preset (`ts-jest/presets/default-esm`)
+12. ✅ `useESM: true` in ts-jest config
+13. ✅ `isolatedModules: true`
+14. ✅ TypeScript `moduleResolution: "bundler"`
+15. ✅ Various moduleNameMapper configurations
+
+### Verification
+
+```bash
+# Code works perfectly outside Jest ✅
+$ npx tsx -e "import('./src/services/OpenClawService.js').then(m => console.log('Exports:', Object.keys(m)))"
+Exports: [ 'OpenClawService', 'createOpenClawService', 'openClawService' ]
+
+# ts-jest drops named exports ❌
+$ npx jest OpenClawService.test.ts
+Module keys: [ 'OpenClawService', 'default' ]
+# createOpenClawService: undefined
+```
+
+**Conclusion:** This is a **ts-jest transformer compilation bug**, not a code quality issue. The factory pattern refactor improves production code quality (DI, testability) even though Jest cannot test it.
 
 ## Recommended Solutions
 
