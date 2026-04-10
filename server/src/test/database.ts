@@ -14,8 +14,8 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 // Test database path (relative to project root)
-const TEST_DB_PATH = '../prisma/test.db';
-const SCHEMA_PATH = '../prisma/schema.prisma';
+const TEST_DB_PATH = 'prisma/test.db';
+const SCHEMA_PATH = 'prisma/schema.prisma';
 
 /**
  * Create a fresh test database
@@ -30,7 +30,10 @@ export async function setupTestDatabase(): Promise<void> {
     await execAsync(`rm -f ${TEST_DB_PATH}`);
 
     // Use db push instead of migrate for faster setup (schema only, no migration history)
-    await execAsync(`DATABASE_URL=file:${TEST_DB_PATH} npx prisma db push --schema=${SCHEMA_PATH}`);
+    // Run from project root directory to resolve paths correctly
+    await execAsync(
+      `cd .. && DATABASE_URL=file:${TEST_DB_PATH} npx prisma db push --schema=${SCHEMA_PATH} --accept-data-loss`
+    );
 
     console.log('✅ Test database created successfully');
   } catch (error: any) {
