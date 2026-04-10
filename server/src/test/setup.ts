@@ -3,6 +3,13 @@
  * Runs before all test suites
  */
 
+import { PrismaClient } from '@prisma/client';
+
+// Test Prisma client for tests that need database access
+export const testPrisma = new PrismaClient({
+  datasourceUrl: process.env.DATABASE_URL || 'file:./prisma/dev.db',
+});
+
 // Mock console.error to reduce noise in tests
 const originalConsoleError = console.error;
 console.error = (...args) => {

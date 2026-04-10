@@ -2,15 +2,15 @@
 export default {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  rootDir: '..',
-  testMatch: ['**/server/src/**/*.test.ts'],
+  rootDir: '.',
+  testMatch: ['**/src/**/*.test.ts'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   collectCoverageFrom: [
-    'server/src/**/*.ts',
-    '!server/src/**/*.d.ts',
-    '!server/src/**/__tests__/**',
-    '!server/src/lib/prisma.ts',
-    '!server/src/index.ts',
+    'src/**/*.ts',
+    '!src/**/*.d.ts',
+    '!src/**/__tests__/**',
+    '!src/lib/prisma.ts',
+    '!src/index.ts',
   ],
   // Gradual coverage thresholds (Phase 3)
   // Week 1: 20%, Week 2: 40%, Week 3: 60%, Week 4: 80%
@@ -24,16 +24,16 @@ export default {
   },
   coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
   coverageDirectory: 'coverage/unit',
-  setupFilesAfterEnv: ['<rootDir>/server/src/test/setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/server/src/$1',
+    '^@/(.*)$': '<rootDir>/src/$1',
     '^(\\.\\.?/.*)\\.js$': '$1',
   },
   transform: {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
-        tsconfig: 'server/tsconfig.json',
+        tsconfig: 'tsconfig.json',
         useESM: true,
         isolatedModules: true, // Bypass strict type checking for Prisma XOR types
       },

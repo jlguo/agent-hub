@@ -274,82 +274,94 @@ header {
   font-size: 1rem;
   padding: 0 0.5rem;
 }
-</style></head><body><main class="jesthtml-content"><header><h1 id="title">Agent Hub Unit Tests</h1></header><section id="metadata-container"><div id="timestamp">Started: 2026-04-07 16:42:07</div><div id="summary"><div id="suite-summary"><div class="summary-total">Suites (1)</div><div class="summary-passed  summary-empty">0 passed</div><div class="summary-failed ">1 failed</div><div class="summary-pending  summary-empty">0 pending</div></div><div id="test-summary"><div class="summary-total">Tests (20)</div><div class="summary-passed ">2 passed</div><div class="summary-failed ">18 failed</div><div class="summary-pending  summary-empty">0 pending</div></div></div></section><details id="suite-1" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts</div><div class="suite-time">0.302s</div></summary><div class="suite-tests"><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - Configuration</div><div class="test-title">should export OpenClawService singleton</div><div class="test-status">failed</div><div class="test-duration">0.012s</div></div><div class="failureMessages"> <pre class="failureMsg">Error: expect(received).toBe(expected) // Object.is equality
+</style></head><body><main class="jesthtml-content"><header><h1 id="title">Agent Hub Unit Tests</h1></header><section id="metadata-container"><div id="timestamp">Started: 2026-04-10 12:25:44</div><div id="summary"><div id="suite-summary"><div class="summary-total">Suites (6)</div><div class="summary-passed  summary-empty">0 passed</div><div class="summary-failed ">6 failed</div><div class="summary-pending  summary-empty">0 pending</div></div><div id="test-summary"><div class="summary-total">Tests (0)</div><div class="summary-passed  summary-empty">0 passed</div><div class="summary-failed  summary-empty">0 failed</div><div class="summary-pending  summary-empty">0 pending</div></div></div></section><details id="suite-1" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/jlguo/agent-hub/server/src/routes/__tests__/messages.integration.test.ts</div><div class="suite-time">0s</div></summary><div class="suite-tests"><div class="test-result failed"><div class="failureMessages suiteFailure"> <pre class="failureMsg">  ● Test suite failed to run
 
-Expected: "function"
-Received: "undefined"
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:29:48)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - Configuration</div><div class="test-title">should export OpenClawServiceClass for testing</div><div class="test-status">failed</div><div class="test-duration">0.001s</div></div><div class="failureMessages"> <pre class="failureMsg">Error: expect(received).toBeDefined()
+    File not found: tsconfig.json (resolved as: /home/jlguo/agent-hub/tsconfig.json)
 
-Received: undefined
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:35:34)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - Configuration</div><div class="test-title">should default to CLI mode when no mode specified</div><div class="test-status">failed</div><div class="test-duration"> </div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.healthCheck is not a function
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:43:42)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - Configuration</div><div class="test-title">should accept CLI mode explicitly</div><div class="test-status">failed</div><div class="test-duration"> </div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.healthCheck is not a function
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:52:42)</pre></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">OpenClawService - Configuration</div><div class="test-title">should accept HTTP mode with valid configuration</div><div class="test-status">passed</div><div class="test-duration"> </div></div></div><div class="test-result passed"><div class="test-info"><div class="test-suitename">OpenClawService - Configuration</div><div class="test-title">should accept REMOTE mode with valid configuration</div><div class="test-status">passed</div><div class="test-duration">0.001s</div></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - Configuration</div><div class="test-title">should require OPENCLAW_VERIFICATION_TOKEN for HTTP mode</div><div class="test-status">failed</div><div class="test-duration">0.001s</div></div><div class="failureMessages"> <pre class="failureMsg">Error: expect(received).rejects.toThrow()
+      at ConfigSet.resolvePath (node_modules/ts-jest/dist/legacy/config/config-set.js:615:19)
+      at ConfigSet._setupConfigSet (node_modules/ts-jest/dist/legacy/config/config-set.js:321:71)
+      at new ConfigSet (node_modules/ts-jest/dist/legacy/config/config-set.js:205:14)
+      at TsJestTransformer._createConfigSet (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:119:16)
+      at TsJestTransformer._configsFor (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:98:34)
+      at TsJestTransformer.getCacheKey (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:249:30)
+      at ScriptTransformer._getCacheKey (node_modules/@jest/transform/build/index.js:188:41)
+      at ScriptTransformer._getFileCachePath (node_modules/@jest/transform/build/index.js:224:27)
+      at ScriptTransformer.transformSource (node_modules/@jest/transform/build/index.js:395:32)
+      at ScriptTransformer._transformAndBuildScript (node_modules/@jest/transform/build/index.js:512:40)
+      at ScriptTransformer.transform (node_modules/@jest/transform/build/index.js:551:19)
+</pre></div></div></div></details><details id="suite-2" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/jlguo/agent-hub/server/src/routes/__tests__/messages.integration.simplified.test.ts</div><div class="suite-time">0s</div></summary><div class="suite-tests"><div class="test-result failed"><div class="failureMessages suiteFailure"> <pre class="failureMsg">  ● Test suite failed to run
 
-Received promise resolved instead of rejected
-Resolved to value: {"OpenClawService": [Function mockConstructor], "default": {"OpenClawService": [Function mockConstructor]}}
-    at expect (/home/jlguo/agent-hub/node_modules/expect/build/index.js:2116:15)
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:80:17)
-    at Promise.finally.completed (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)
-    at _callCircusTest (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)
-    at _runTest (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:947:3)
-    at /home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:849:7
-    at _runTestsForDescribeBlock (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:862:11)
-    at _runTestsForDescribeBlock (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
-    at run (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:761:3)
-    at runAndTransformResultsToJestFormat (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)
-    at jestAdapter (/home/jlguo/agent-hub/node_modules/jest-circus/build/runner.js:101:19)
-    at runTestInternal (/home/jlguo/agent-hub/node_modules/jest-runner/build/index.js:275:16)
-    at runTest (/home/jlguo/agent-hub/node_modules/jest-runner/build/index.js:343:7)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - Configuration</div><div class="test-title">should require OPENCLAW_GATEWAY_URL for HTTP mode</div><div class="test-status">failed</div><div class="test-duration">0.001s</div></div><div class="failureMessages"> <pre class="failureMsg">Error: expect(received).rejects.toThrow()
+    File not found: tsconfig.json (resolved as: /home/jlguo/agent-hub/tsconfig.json)
 
-Received promise resolved instead of rejected
-Resolved to value: {"OpenClawService": [Function mockConstructor], "default": {"OpenClawService": [Function mockConstructor]}}
-    at expect (/home/jlguo/agent-hub/node_modules/expect/build/index.js:2116:15)
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:88:17)
-    at Promise.finally.completed (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)
-    at _callCircusTest (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)
-    at _runTest (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:947:3)
-    at /home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:849:7
-    at _runTestsForDescribeBlock (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:862:11)
-    at _runTestsForDescribeBlock (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
-    at run (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:761:3)
-    at runAndTransformResultsToJestFormat (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)
-    at jestAdapter (/home/jlguo/agent-hub/node_modules/jest-circus/build/runner.js:101:19)
-    at runTestInternal (/home/jlguo/agent-hub/node_modules/jest-runner/build/index.js:275:16)
-    at runTest (/home/jlguo/agent-hub/node_modules/jest-runner/build/index.js:343:7)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - Configuration</div><div class="test-title">should reject invalid OPENCLAW_MODE</div><div class="test-status">failed</div><div class="test-duration"> </div></div><div class="failureMessages"> <pre class="failureMsg">Error: expect(received).rejects.toThrow()
+      at ConfigSet.resolvePath (node_modules/ts-jest/dist/legacy/config/config-set.js:615:19)
+      at ConfigSet._setupConfigSet (node_modules/ts-jest/dist/legacy/config/config-set.js:321:71)
+      at new ConfigSet (node_modules/ts-jest/dist/legacy/config/config-set.js:205:14)
+      at TsJestTransformer._createConfigSet (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:119:16)
+      at TsJestTransformer._configsFor (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:98:34)
+      at TsJestTransformer.getCacheKey (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:249:30)
+      at ScriptTransformer._getCacheKey (node_modules/@jest/transform/build/index.js:188:41)
+      at ScriptTransformer._getFileCachePath (node_modules/@jest/transform/build/index.js:224:27)
+      at ScriptTransformer.transformSource (node_modules/@jest/transform/build/index.js:395:32)
+      at ScriptTransformer._transformAndBuildScript (node_modules/@jest/transform/build/index.js:512:40)
+      at ScriptTransformer.transform (node_modules/@jest/transform/build/index.js:551:19)
+</pre></div></div></div></details><details id="suite-3" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts</div><div class="suite-time">0s</div></summary><div class="suite-tests"><div class="test-result failed"><div class="failureMessages suiteFailure"> <pre class="failureMsg">  ● Test suite failed to run
 
-Received promise resolved instead of rejected
-Resolved to value: {"OpenClawService": [Function mockConstructor], "default": {"OpenClawService": [Function mockConstructor]}}
-    at expect (/home/jlguo/agent-hub/node_modules/expect/build/index.js:2116:15)
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:95:17)
-    at Promise.finally.completed (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)
-    at new Promise (&lt;anonymous&gt;)
-    at callAsyncCircusFn (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)
-    at _callCircusTest (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)
-    at _runTest (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:947:3)
-    at /home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:849:7
-    at _runTestsForDescribeBlock (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:862:11)
-    at _runTestsForDescribeBlock (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:857:11)
-    at run (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:761:3)
-    at runAndTransformResultsToJestFormat (/home/jlguo/agent-hub/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)
-    at jestAdapter (/home/jlguo/agent-hub/node_modules/jest-circus/build/runner.js:101:19)
-    at runTestInternal (/home/jlguo/agent-hub/node_modules/jest-runner/build/index.js:275:16)
-    at runTest (/home/jlguo/agent-hub/node_modules/jest-runner/build/index.js:343:7)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - Type Contracts</div><div class="test-title">should have sendMessage method with correct signature</div><div class="test-status">failed</div><div class="test-duration"> </div></div><div class="failureMessages"> <pre class="failureMsg">Error: expect(received).toBeDefined()
+    File not found: tsconfig.json (resolved as: /home/jlguo/agent-hub/tsconfig.json)
 
-Received: undefined
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:104:41)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - Type Contracts</div><div class="test-title">should have healthCheck method with correct signature</div><div class="test-status">failed</div><div class="test-duration">0.001s</div></div><div class="failureMessages"> <pre class="failureMsg">Error: expect(received).toBeDefined()
+      at ConfigSet.resolvePath (node_modules/ts-jest/dist/legacy/config/config-set.js:615:19)
+      at ConfigSet._setupConfigSet (node_modules/ts-jest/dist/legacy/config/config-set.js:321:71)
+      at new ConfigSet (node_modules/ts-jest/dist/legacy/config/config-set.js:205:14)
+      at TsJestTransformer._createConfigSet (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:119:16)
+      at TsJestTransformer._configsFor (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:98:34)
+      at TsJestTransformer.getCacheKey (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:249:30)
+      at ScriptTransformer._getCacheKey (node_modules/@jest/transform/build/index.js:188:41)
+      at ScriptTransformer._getFileCachePath (node_modules/@jest/transform/build/index.js:224:27)
+      at ScriptTransformer.transformSource (node_modules/@jest/transform/build/index.js:395:32)
+      at ScriptTransformer._transformAndBuildScript (node_modules/@jest/transform/build/index.js:512:40)
+      at ScriptTransformer.transform (node_modules/@jest/transform/build/index.js:551:19)
+</pre></div></div></div></details><details id="suite-4" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/jlguo/agent-hub/server/src/services/__tests__/MessageService.test.ts</div><div class="suite-time">0s</div></summary><div class="suite-tests"><div class="test-result failed"><div class="failureMessages suiteFailure"> <pre class="failureMsg">  ● Test suite failed to run
 
-Received: undefined
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:112:41)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - Type Contracts</div><div class="test-title">healthCheck should return object with status field</div><div class="test-status">failed</div><div class="test-duration"> </div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.healthCheck is not a function
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:120:42)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - Type Contracts</div><div class="test-title">healthCheck should return object with mode field</div><div class="test-status">failed</div><div class="test-duration"> </div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.healthCheck is not a function
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:131:42)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - Type Contracts</div><div class="test-title">healthCheck should return object with timestamp</div><div class="test-status">failed</div><div class="test-duration">0.001s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.healthCheck is not a function
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:141:42)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - CLI Mode (Integration)</div><div class="test-title">should have sendMessage that returns Promise</div><div class="test-status">failed</div><div class="test-duration"> </div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.sendMessage is not a function
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:162:36)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - CLI Mode (Integration)</div><div class="test-title">should have healthCheck that returns Promise</div><div class="test-status">failed</div><div class="test-duration"> </div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.healthCheck is not a function
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:170:36)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - HTTP Mode (Integration)</div><div class="test-title">should have sendMessage that returns Promise</div><div class="test-status">failed</div><div class="test-duration"> </div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.sendMessage is not a function
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:190:36)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - HTTP Mode (Integration)</div><div class="test-title">should have healthCheck that returns Promise</div><div class="test-status">failed</div><div class="test-duration"> </div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.healthCheck is not a function
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:198:36)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - Remote Mode (Integration)</div><div class="test-title">should have sendMessage that returns Promise</div><div class="test-status">failed</div><div class="test-duration">0.001s</div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.sendMessage is not a function
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:218:36)</pre></div></div><div class="test-result failed"><div class="test-info"><div class="test-suitename">OpenClawService - Remote Mode (Integration)</div><div class="test-title">healthCheck should include tunnel status for remote mode</div><div class="test-status">failed</div><div class="test-duration"> </div></div><div class="failureMessages"> <pre class="failureMsg">TypeError: OpenClawService.healthCheck is not a function
-    at Object.&lt;anonymous&gt; (/home/jlguo/agent-hub/server/src/services/__tests__/OpenClawService.test.ts:226:42)</pre></div></div></div></details></main></body></html>
+    File not found: tsconfig.json (resolved as: /home/jlguo/agent-hub/tsconfig.json)
+
+      at ConfigSet.resolvePath (node_modules/ts-jest/dist/legacy/config/config-set.js:615:19)
+      at ConfigSet._setupConfigSet (node_modules/ts-jest/dist/legacy/config/config-set.js:321:71)
+      at new ConfigSet (node_modules/ts-jest/dist/legacy/config/config-set.js:205:14)
+      at TsJestTransformer._createConfigSet (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:119:16)
+      at TsJestTransformer._configsFor (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:98:34)
+      at TsJestTransformer.getCacheKey (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:249:30)
+      at ScriptTransformer._getCacheKey (node_modules/@jest/transform/build/index.js:188:41)
+      at ScriptTransformer._getFileCachePath (node_modules/@jest/transform/build/index.js:224:27)
+      at ScriptTransformer.transformSource (node_modules/@jest/transform/build/index.js:395:32)
+      at ScriptTransformer._transformAndBuildScript (node_modules/@jest/transform/build/index.js:512:40)
+      at ScriptTransformer.transform (node_modules/@jest/transform/build/index.js:551:19)
+</pre></div></div></div></details><details id="suite-5" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/jlguo/agent-hub/server/src/utils/__tests__/error-handler.test.ts</div><div class="suite-time">0s</div></summary><div class="suite-tests"><div class="test-result failed"><div class="failureMessages suiteFailure"> <pre class="failureMsg">  ● Test suite failed to run
+
+    File not found: tsconfig.json (resolved as: /home/jlguo/agent-hub/tsconfig.json)
+
+      at ConfigSet.resolvePath (node_modules/ts-jest/dist/legacy/config/config-set.js:615:19)
+      at ConfigSet._setupConfigSet (node_modules/ts-jest/dist/legacy/config/config-set.js:321:71)
+      at new ConfigSet (node_modules/ts-jest/dist/legacy/config/config-set.js:205:14)
+      at TsJestTransformer._createConfigSet (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:119:16)
+      at TsJestTransformer._configsFor (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:98:34)
+      at TsJestTransformer.getCacheKey (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:249:30)
+      at ScriptTransformer._getCacheKey (node_modules/@jest/transform/build/index.js:188:41)
+      at ScriptTransformer._getFileCachePath (node_modules/@jest/transform/build/index.js:224:27)
+      at ScriptTransformer.transformSource (node_modules/@jest/transform/build/index.js:395:32)
+      at ScriptTransformer._transformAndBuildScript (node_modules/@jest/transform/build/index.js:512:40)
+      at ScriptTransformer.transform (node_modules/@jest/transform/build/index.js:551:19)
+</pre></div></div></div></details><details id="suite-6" class="suite-container" open=""><summary class="suite-info"><div class="suite-path">/home/jlguo/agent-hub/server/src/services/__tests__/HeatTracker.test.ts</div><div class="suite-time">0s</div></summary><div class="suite-tests"><div class="test-result failed"><div class="failureMessages suiteFailure"> <pre class="failureMsg">  ● Test suite failed to run
+
+    File not found: tsconfig.json (resolved as: /home/jlguo/agent-hub/tsconfig.json)
+
+      at ConfigSet.resolvePath (node_modules/ts-jest/dist/legacy/config/config-set.js:615:19)
+      at ConfigSet._setupConfigSet (node_modules/ts-jest/dist/legacy/config/config-set.js:321:71)
+      at new ConfigSet (node_modules/ts-jest/dist/legacy/config/config-set.js:205:14)
+      at TsJestTransformer._createConfigSet (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:119:16)
+      at TsJestTransformer._configsFor (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:98:34)
+      at TsJestTransformer.getCacheKey (node_modules/ts-jest/dist/legacy/ts-jest-transformer.js:249:30)
+      at ScriptTransformer._getCacheKey (node_modules/@jest/transform/build/index.js:188:41)
+      at ScriptTransformer._getFileCachePath (node_modules/@jest/transform/build/index.js:224:27)
+      at ScriptTransformer.transformSource (node_modules/@jest/transform/build/index.js:395:32)
+      at ScriptTransformer._transformAndBuildScript (node_modules/@jest/transform/build/index.js:512:40)
+      at ScriptTransformer.transform (node_modules/@jest/transform/build/index.js:551:19)
+</pre></div></div></div></details></main></body></html>
