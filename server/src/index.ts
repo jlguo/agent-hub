@@ -10,6 +10,7 @@ import { router as agentsRouter } from './routes/agents.js';
 import { router as messagesRouter } from './routes/messages.js';
 import webhookRouter from './routes/webhooks.js';
 import openclawGatewayRouter from './routes/openclaw-gateway.js';
+import debugRouter from './routes/debug.js';
 import { initializeIO } from './lib/socket.js';
 import { feishuOfficial } from './services/FeishuOfficialService.js';
 import { handleFeishuMessage } from './services/MessageService.js';
@@ -76,6 +77,12 @@ export function createApp(): express.Express {
   app.use('/api/messages', messagesRouter);
   app.use('/api/webhooks', webhookRouter);
   app.use('/api/openclaw', openclawGatewayRouter);
+
+  // Debug routes (testing only - not for production)
+  if (process.env.NODE_ENV !== 'production') {
+    app.use('/api/debug', debugRouter);
+    console.log('🔧 Debug routes enabled (testing only)');
+  }
 
   // Feishu webhook endpoint
   app.post('/api/webhooks/feishu', async (req, res) => {

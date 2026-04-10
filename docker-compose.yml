@@ -10,7 +10,7 @@ services:
     env_file:
       - .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - DATABASE_URL=file:/app/prisma/dev.db
       - OPENCLAW_MODE=remote
       - OPENCLAW_GATEWAY_URL=ws://127.0.0.1:18789

@@ -3,6 +3,16 @@ set -e
 
 echo "🔐 Starting SSH tunnel for OpenClaw remote mode..."
 
+# Fix SSH key permissions if mounted from volume
+if [ -d /home/nodeuser/.ssh ] && [ "$(ls -A /home/nodeuser/.ssh 2>/dev/null)" ]; then
+  echo "🔑 Fixing SSH key permissions..."
+  chmod 700 /home/nodeuser/.ssh 2>/dev/null || true
+  chmod 600 /home/nodeuser/.ssh/id_ed25519 2>/dev/null || true
+  chmod 644 /home/nodeuser/.ssh/id_ed25519.pub 2>/dev/null || true
+  chown -R nodeuser:nodejs /home/nodeuser/.ssh 2>/dev/null || true
+  echo "✅ SSH key permissions fixed"
+fi
+
 # Start SSH tunnel if OPENCLAW_MODE is remote
 if [ "$OPENCLAW_MODE" = "remote" ]; then
   # Kill any existing tunnel

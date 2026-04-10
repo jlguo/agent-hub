@@ -37,18 +37,37 @@ test.describe('Agent Discussions', () => {
     // Wait for messages to load
     await page.waitForTimeout(2000);
 
-    // STEP 1: Build heat by sending multiple messages (critical for agent responses)
-    console.log('🔥 Building heat...');
+    // STEP 1: Set heat directly using debug endpoint for deterministic testing
+    console.log('🔥 Setting heat to 85 (HOT zone) via debug API...');
+
+    // Get the room ID from the URL or API
+    const roomsResponse = await page.request.get('http://localhost:4000/api/rooms');
+    const rooms = await roomsResponse.json();
+    const familyRoom = rooms.find((r: any) => r.name.includes('Family'));
+
+    // Define input locator for use throughout the test
     const input = page.locator('input[type="text"][placeholder*="Type a message"]');
 
-    // Send 10 messages to build heat to HOT zone (80% response probability)
-    for (let i = 0; i < 10; i++) {
-      await input.fill(`Heat building message ${i + 1}`);
-      const sendButton = page.locator('button:has-text("Send")');
-      await sendButton.click();
-      await page.waitForTimeout(300); // Small delay between messages
+    if (familyRoom) {
+      // Set heat to 85 (guarantees 80%+ agent response probability)
+      const heatResponse = await page.request.post('http://localhost:4000/api/debug/set-heat', {
+        data: {
+          roomId: familyRoom.id,
+          heat: 85,
+        },
+      });
+      const heatResult = await heatResponse.json();
+      console.log('✅ Heat set:', heatResult);
+    } else {
+      console.warn('⚠️  Family room not found, falling back to message-based heat building');
+      // Fallback: build heat by sending messages
+      for (let i = 0; i < 10; i++) {
+        await input.fill(`Heat building message ${i + 1}`);
+        const sendButton = page.locator('button:has-text("Send")');
+        await sendButton.click();
+        await page.waitForTimeout(300);
+      }
     }
-    console.log('✅ Heat built (should be in HOT zone now)');
 
     // Wait a moment for heat to register
     await page.waitForTimeout(2000);
