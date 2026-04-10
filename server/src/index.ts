@@ -46,6 +46,13 @@ export function createApp(): express.Express {
   app.use(cors());
   app.use(express.json());
 
+  // Rate limiting for API routes (applied after middleware, before routes)
+  if (process.env.NODE_ENV !== 'test') {
+    const { apiLimiter } = await import('./middleware/rateLimiter.js');
+    app.use('/api/', apiLimiter);
+    console.log('🛡️  Rate limiting enabled (100 req/15min)');
+  }
+
   // Health check endpoint
   app.get('/health', async (_req, res) => {
     const healthData: any = {
