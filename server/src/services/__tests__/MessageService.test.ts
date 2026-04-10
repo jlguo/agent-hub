@@ -20,14 +20,14 @@ describe('MessageService', () => {
   });
 
   afterEach(async () => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('parseMentions', () => {
     function parseMentions(message: string): string[] {
       const mentions = message.match(/@(\w+)/g);
       if (!mentions) return [];
-      return mentions.map(m => m.slice(1).toLowerCase());
+      return mentions.map((m) => m.slice(1).toLowerCase());
     }
 
     it('should extract single @mention from message', () => {
@@ -37,7 +37,7 @@ describe('MessageService', () => {
     });
 
     it('should extract multiple @mentions from message', () => {
-      const message = '@Mom @Dad @Bro let\'s go!';
+      const message = "@Mom @Dad @Bro let's go!";
       const mentions = parseMentions(message);
       expect(mentions).toEqual(['mom', 'dad', 'bro']);
     });
@@ -55,13 +55,13 @@ describe('MessageService', () => {
     });
 
     it('should handle mentions with special characters', () => {
-      const message = '@Mom, what\'s up? @Dad!';
+      const message = "@Mom, what's up? @Dad!";
       const mentions = parseMentions(message);
       expect(mentions).toEqual(['mom', 'dad']);
     });
 
     it('should handle mentions at end of message', () => {
-      const message = 'Let\'s go @Mom';
+      const message = "Let's go @Mom";
       const mentions = parseMentions(message);
       expect(mentions).toEqual(['mom']);
     });
@@ -161,9 +161,24 @@ describe('MessageService', () => {
     it('should retrieve messages for room ordered by createdAt', async () => {
       await testPrisma.message.createMany({
         data: [
-          { content: 'First', senderType: 'human', roomId: testRoomId, createdAt: new Date('2026-01-01') },
-          { content: 'Second', senderType: 'human', roomId: testRoomId, createdAt: new Date('2026-01-02') },
-          { content: 'Third', senderType: 'human', roomId: testRoomId, createdAt: new Date('2026-01-03') },
+          {
+            content: 'First',
+            senderType: 'human',
+            roomId: testRoomId,
+            createdAt: new Date('2026-01-01'),
+          },
+          {
+            content: 'Second',
+            senderType: 'human',
+            roomId: testRoomId,
+            createdAt: new Date('2026-01-02'),
+          },
+          {
+            content: 'Third',
+            senderType: 'human',
+            roomId: testRoomId,
+            createdAt: new Date('2026-01-03'),
+          },
         ],
       });
 
@@ -179,11 +194,13 @@ describe('MessageService', () => {
 
     it('should limit results to specified count', async () => {
       await testPrisma.message.createMany({
-        data: Array(20).fill(null).map((_, i) => ({
-          content: `Message ${i}`,
-          senderType: 'human',
-          roomId: testRoomId,
-        })),
+        data: Array(20)
+          .fill(null)
+          .map((_, i) => ({
+            content: `Message ${i}`,
+            senderType: 'human',
+            roomId: testRoomId,
+          })),
       });
 
       const messages = await testPrisma.message.findMany({

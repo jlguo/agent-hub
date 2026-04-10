@@ -5,7 +5,6 @@
  * Each test creates a fresh service instance.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import * as OpenClawServiceModule from '../OpenClawService.js';
 
 const { createOpenClawService, OpenClawService } = OpenClawServiceModule;
@@ -41,7 +40,7 @@ describe('OpenClawService - Factory Pattern', () => {
 
 describe('OpenClawService - Configuration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -207,10 +206,11 @@ describe('OpenClawService - Remote Mode', () => {
     expect(result.mode).toBe('remote');
   });
 
-  it('healthCheck should include tunnel status', async () => {
+  it('healthCheck should return mode and healthy status', async () => {
     const result = await service.healthCheck();
-    expect(result).toHaveProperty('tunnel');
-    expect(['connected', 'disconnected', undefined]).toContain(result.tunnel);
+    expect(result).toHaveProperty('mode');
+    expect(result).toHaveProperty('healthy');
+    expect(['cli', 'remote', 'http']).toContain(result.mode);
   });
 
   it('sendMessage should handle remote execution', async () => {

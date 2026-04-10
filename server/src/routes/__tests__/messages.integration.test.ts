@@ -9,7 +9,6 @@
  * - Discussion triggers
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import { prisma } from '../../index';
 import { setupTestDatabase, cleanupTestDatabase, withTestDatabase } from '../../test/database';
@@ -238,10 +237,10 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
       });
 
       // Mock OpenClawService to avoid actual CLI calls
-      jest.mock('../services/OpenClawService', () => ({
+      vi.mock('../services/OpenClawService', () => ({
         OpenClawService: {
-          sendMessage: jest.fn().mockResolvedValue({ content: 'Agent response' }),
-          healthCheck: jest.fn().mockResolvedValue({ status: 'healthy' }),
+          sendMessage: vi.fn().mockResolvedValue({ content: 'Agent response' }),
+          healthCheck: vi.fn().mockResolvedValue({ status: 'healthy' }),
         },
       }));
 

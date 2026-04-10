@@ -4,6 +4,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import { vi } from 'vitest';
 
 // Test Prisma client for tests that need database access
 export const testPrisma = new PrismaClient({
@@ -18,23 +19,9 @@ console.error = (...args) => {
 };
 
 // Mock Socket.IO
-jest.mock('../lib/socket', () => ({
+vi.mock('../lib/socket', () => ({
   getIO: () => ({
-    to: jest.fn().mockReturnThis(),
-    emit: jest.fn(),
+    to: vi.fn().mockReturnThis(),
+    emit: vi.fn(),
   }),
-}));
-
-// Mock OpenClaw Service
-jest.mock('../services/OpenClawService', () => ({
-  OpenClawService: jest.fn().mockImplementation(() => ({
-    sendMessage: jest.fn().mockResolvedValue({
-      content: 'Mock response',
-      timestamp: new Date().toISOString(),
-    }),
-    healthCheck: jest.fn().mockResolvedValue({
-      status: 'healthy',
-      mode: 'cli',
-    }),
-  })),
 }));

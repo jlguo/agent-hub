@@ -5,7 +5,6 @@
  * @jest-environment node
  */
 
-import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import { prisma } from '../../index';
 import { createTestAgentData, createTestRoomData } from '../../test/test-utils';

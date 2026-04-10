@@ -15,12 +15,12 @@
     "lint": "eslint server/src --ext .ts",
     "format": "prettier --write \"**/*.{ts,js,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,js,json,md}\"",
-    "test": "jest --config=server/jest.config.js",
-    "test:unit": "jest --config=server/jest.config.js",
-    "test:watch": "jest --config=server/jest.config.js --watch",
-    "test:coverage": "jest --config=server/jest.config.js --coverage",
+    "test": "vitest run --config=server/vitest.config.ts",
+    "test:unit": "vitest run --config=server/vitest.config.ts",
+    "test:watch": "vitest --config=server/vitest.config.ts",
+    "test:coverage": "vitest run --config=server/vitest.config.ts --coverage",
     "test:coverage:check": "npm run test:coverage && tsx scripts/check-coverage.ts",
-    "test:pre-commit": "jest --config=server/jest.config.js --findRelatedTests --bail",
+    "test:pre-commit": "vitest run --config=server/vitest.config.ts --bail",
     "test:integration": "jest --config=server/jest.config.js --testPathPattern=integration",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
@@ -70,6 +70,7 @@
     "@types/ws": "^8.5.10",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
+    "@vitest/coverage-v8": "^4.1.4",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
@@ -83,6 +84,7 @@
     "supertest": "7.2.2",
     "ts-jest": "29.4.9",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.4"
   }
 }
