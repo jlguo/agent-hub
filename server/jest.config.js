@@ -1,6 +1,6 @@
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 export default {
-  preset: 'ts-jest',
+  preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
   rootDir: '.',
   testMatch: ['**/src/**/*.test.ts'],
@@ -12,8 +12,6 @@ export default {
     '!src/lib/prisma.ts',
     '!src/index.ts',
   ],
-  // Gradual coverage thresholds (Phase 3)
-  // Week 1: 20%, Week 2: 40%, Week 3: 60%, Week 4: 80%
   coverageThreshold: {
     global: {
       branches: 20,
@@ -35,25 +33,12 @@ export default {
       {
         tsconfig: 'tsconfig.json',
         useESM: true,
-        isolatedModules: true, // Bypass strict type checking for Prisma XOR types
+        isolatedModules: true,
       },
     ],
   },
-  // Run tests in sequence to avoid database conflicts
-  // Use ts-jest with transpileOnly to bypass Prisma XOR type issues in tests
-  globals: {
-    'ts-jest': {
-      isolatedModules: true,
-      tsconfig: {
-        skipLibCheck: true,
-        noImplicitAny: false,
-      },
-    },
-  },
   maxWorkers: 1,
-  // ES module support
   extensionsToTreatAsEsm: ['.ts'],
-  // Test result reporting
   reporters: [
     'default',
     [
