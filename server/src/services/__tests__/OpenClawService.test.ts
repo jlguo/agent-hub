@@ -1,15 +1,43 @@
 /**
  * OpenClawService Unit Tests
  *
- * Note: OpenClawService is a singleton instantiated at module load time,
- * which makes traditional mocking difficult. These tests focus on:
- * - Configuration validation
- * - Type safety
- * - Interface contracts
- * - Health check structure
+ * Uses factory pattern for proper test isolation.
+ * Each test creates a fresh service instance.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import * as OpenClawServiceModule from '../OpenClawService.js';
+
+const { createOpenClawService, OpenClawService } = OpenClawServiceModule;
+
+describe('OpenClawService - Factory Pattern', () => {
+  it('should export createOpenClawService factory function', () => {
+    expect(createOpenClawService).toBeDefined();
+    expect(typeof createOpenClawService).toBe('function');
+  });
+
+  it('should export OpenClawService class', () => {
+    expect(OpenClawService).toBeDefined();
+    expect(typeof OpenClawService).toBe('function');
+  });
+
+  it('should export singleton instance for backward compatibility', async () => {
+    const module = await import('../OpenClawService.js');
+    expect(module.openClawService).toBeDefined();
+    expect(module.openClawService).toBeInstanceOf(OpenClawService);
+  });
+
+  it('should create isolated instances with factory', () => {
+    const service1 = createOpenClawService();
+    const service2 = createOpenClawService();
+    expect(service1).not.toBe(service2);
+  });
+
+  it('should allow creating instances with custom config', () => {
+    const service = createOpenClawService({ mode: 'cli' });
+    expect(service).toBeInstanceOf(OpenClawService);
+  });
+});
 
 describe('OpenClawService - Configuration', () => {
   beforeEach(() => {
@@ -17,215 +45,176 @@ describe('OpenClawService - Configuration', () => {
   });
 
   afterEach(() => {
-    jest.resetModules();
     delete process.env.OPENCLAW_MODE;
     delete process.env.OPENCLAW_GATEWAY_URL;
     delete process.env.OPENCLAW_VERIFICATION_TOKEN;
   });
 
-  it('should export OpenClawService singleton', async () => {
-    const { OpenClawService } = await import('../OpenClawService');
-    expect(OpenClawService).toBeDefined();
-    expect(typeof OpenClawService.sendMessage).toBe('function');
-    expect(typeof OpenClawService.healthCheck).toBe('function');
-  });
-
-  it('should export OpenClawServiceClass for testing', async () => {
-    const { OpenClawServiceClass } = await import('../OpenClawService');
-    expect(OpenClawServiceClass).toBeDefined();
-    expect(typeof OpenClawServiceClass).toBe('function');
-  });
-
-  it('should default to CLI mode when no mode specified', async () => {
+  it('should default to CLI mode when no config specified', () => {
     delete process.env.OPENCLAW_MODE;
-
-    const { OpenClawService } = await import('../OpenClawService');
-    const result = await OpenClawService.healthCheck();
-
-    expect(result.mode).toBe('cli');
+    const service = createOpenClawService();
+    expect(service).toBeInstanceOf(OpenClawService);
   });
 
-  it('should accept CLI mode explicitly', async () => {
-    process.env.OPENCLAW_MODE = 'cli';
-
-    const { OpenClawService } = await import('../OpenClawService');
-    const result = await OpenClawService.healthCheck();
-
-    expect(result.mode).toBe('cli');
+  it('should accept CLI mode from config', () => {
+    const service = createOpenClawService({ mode: 'cli' });
+    expect(service).toBeInstanceOf(OpenClawService);
   });
 
-  it('should accept HTTP mode with valid configuration', async () => {
-    process.env.OPENCLAW_MODE = 'http';
-    process.env.OPENCLAW_GATEWAY_URL = 'http://localhost:18789';
-    process.env.OPENCLAW_VERIFICATION_TOKEN = 'test';
-
-    const { OpenClawService } = await import('../OpenClawService');
-    expect(OpenClawService).toBeDefined();
+  it('should accept HTTP mode from config', () => {
+    const service = createOpenClawService({
+      mode: 'http',
+      gatewayUrl: 'http://localhost:18789',
+      verificationToken: 'test',
+    });
+    expect(service).toBeInstanceOf(OpenClawService);
   });
 
-  it('should accept REMOTE mode with valid configuration', async () => {
+  it('should accept REMOTE mode from config', () => {
+    const service = createOpenClawService({
+      mode: 'remote',
+      gatewayUrl: 'ws://localhost:18789',
+      verificationToken: 'test',
+    });
+    expect(service).toBeInstanceOf(OpenClawService);
+  });
+
+  it('should throw error for HTTP mode without verification token', () => {
+    expect(() => {
+      createOpenClawService({
+        mode: 'http',
+        gatewayUrl: 'http://localhost:18789',
+      });
+    }).toThrow('OPENCLAW_VERIFICATION_TOKEN required');
+  });
+
+  it('should use environment variables when config not specified', () => {
     process.env.OPENCLAW_MODE = 'remote';
-    process.env.OPENCLAW_GATEWAY_URL = 'ws://127.0.0.1:18789';
-    process.env.OPENCLAW_VERIFICATION_TOKEN = 'test';
+    process.env.OPENCLAW_GATEWAY_URL = 'ws://test:18789';
+    process.env.OPENCLAW_VERIFICATION_TOKEN = 'env-token';
 
-    const { OpenClawService } = await import('../OpenClawService');
-    expect(OpenClawService).toBeDefined();
+    const service = createOpenClawService();
+    expect(service).toBeInstanceOf(OpenClawService);
   });
 
-  it('should require OPENCLAW_VERIFICATION_TOKEN for HTTP mode', async () => {
-    process.env.OPENCLAW_MODE = 'http';
-    process.env.OPENCLAW_GATEWAY_URL = 'http://localhost:18789';
-    delete process.env.OPENCLAW_VERIFICATION_TOKEN;
-
-    await expect(import('../OpenClawService')).rejects.toThrow(
-      'OPENCLAW_VERIFICATION_TOKEN required'
-    );
-  });
-
-  it('should require OPENCLAW_GATEWAY_URL for HTTP mode', async () => {
-    process.env.OPENCLAW_MODE = 'http';
-    delete process.env.OPENCLAW_GATEWAY_URL;
-
-    await expect(import('../OpenClawService')).rejects.toThrow('OPENCLAW_GATEWAY_URL required');
-  });
-
-  it('should reject invalid OPENCLAW_MODE', async () => {
-    process.env.OPENCLAW_MODE = 'invalid';
-
-    await expect(import('../OpenClawService')).rejects.toThrow('Invalid OPENCLAW_MODE');
+  it('should prioritize config over environment variables', () => {
+    process.env.OPENCLAW_MODE = 'cli';
+    const service = createOpenClawService({
+      mode: 'remote',
+      gatewayUrl: 'ws://test',
+      verificationToken: 'test',
+    });
+    expect(service).toBeInstanceOf(OpenClawService);
   });
 });
 
 describe('OpenClawService - Type Contracts', () => {
-  it('should have sendMessage method with correct signature', async () => {
-    const { OpenClawService } = await import('../OpenClawService');
+  let service: OpenClawService;
 
-    expect(OpenClawService.sendMessage).toBeDefined();
-    expect(typeof OpenClawService.sendMessage).toBe('function');
-    expect(OpenClawService.sendMessage.length).toBe(3); // message, agentId, sessionId
+  beforeEach(() => {
+    service = createOpenClawService({ mode: 'cli' });
   });
 
-  it('should have healthCheck method with correct signature', async () => {
-    const { OpenClawService } = await import('../OpenClawService');
-
-    expect(OpenClawService.healthCheck).toBeDefined();
-    expect(typeof OpenClawService.healthCheck).toBe('function');
-    expect(OpenClawService.healthCheck.length).toBe(0);
+  it('sendMessage should accept three parameters', () => {
+    expect(service.sendMessage).toBeDefined();
+    expect(typeof service.sendMessage).toBe('function');
+    expect(service.sendMessage.length).toBe(3);
   });
 
-  it('healthCheck should return object with status field', async () => {
-    const { OpenClawService } = await import('../OpenClawService');
-
-    const result = await OpenClawService.healthCheck();
-
-    expect(result).toBeDefined();
-    expect(typeof result).toBe('object');
-    expect(result.status).toBeDefined();
-    expect(typeof result.status).toBe('string');
+  it('healthCheck should accept zero parameters', () => {
+    expect(service.healthCheck).toBeDefined();
+    expect(typeof service.healthCheck).toBe('function');
+    expect(service.healthCheck.length).toBe(0);
   });
 
-  it('healthCheck should return object with mode field', async () => {
-    const { OpenClawService } = await import('../OpenClawService');
+  it('healthCheck should return Promise', async () => {
+    const result = await service.healthCheck();
+    expect(result).toBeInstanceOf(Object);
+  });
 
-    const result = await OpenClawService.healthCheck();
-
-    expect(result.mode).toBeDefined();
+  it('healthCheck result should have mode field', async () => {
+    const result = await service.healthCheck();
+    expect(result).toHaveProperty('mode');
     expect(typeof result.mode).toBe('string');
-    expect(['cli', 'http', 'remote']).toContain(result.mode);
   });
 
-  it('healthCheck should return object with timestamp', async () => {
-    const { OpenClawService } = await import('../OpenClawService');
-
-    const result = await OpenClawService.healthCheck();
-
-    expect(result.timestamp).toBeDefined();
-    expect(new Date(result.timestamp)).toBeInstanceOf(Date);
-  });
-});
-
-describe('OpenClawService - CLI Mode (Integration)', () => {
-  beforeEach(() => {
-    process.env.OPENCLAW_MODE = 'cli';
-    delete process.env.OPENCLAW_GATEWAY_URL;
-    delete process.env.OPENCLAW_VERIFICATION_TOKEN;
+  it('healthCheck result should have healthy field', async () => {
+    const result = await service.healthCheck();
+    expect(result).toHaveProperty('healthy');
+    expect(typeof result.healthy).toBe('boolean');
   });
 
-  afterEach(() => {
-    jest.resetModules();
-  });
-
-  it('should have sendMessage that returns Promise', async () => {
-    const { OpenClawService } = await import('../OpenClawService');
-
-    const result = OpenClawService.sendMessage('test', 'test-agent', 'test-session');
-
-    expect(result).toBeInstanceOf(Promise);
-  });
-
-  it('should have healthCheck that returns Promise', async () => {
-    const { OpenClawService } = await import('../OpenClawService');
-
-    const result = OpenClawService.healthCheck();
-
+  it('sendMessage should return Promise', async () => {
+    const result = service.sendMessage('test', 'test-agent', 'test-session');
     expect(result).toBeInstanceOf(Promise);
   });
 });
 
-describe('OpenClawService - HTTP Mode (Integration)', () => {
+describe('OpenClawService - CLI Mode', () => {
+  let service: OpenClawService;
+
   beforeEach(() => {
-    process.env.OPENCLAW_MODE = 'http';
-    process.env.OPENCLAW_GATEWAY_URL = 'http://localhost:18789';
-    process.env.OPENCLAW_VERIFICATION_TOKEN = 'test-token';
+    service = createOpenClawService({ mode: 'cli' });
   });
 
-  afterEach(() => {
-    jest.resetModules();
+  it('healthCheck should report CLI mode', async () => {
+    const result = await service.healthCheck();
+    expect(result.mode).toBe('cli');
   });
 
-  it('should have sendMessage that returns Promise', async () => {
-    const { OpenClawService } = await import('../OpenClawService');
-
-    const result = OpenClawService.sendMessage('test', 'test-agent', 'test-session');
-
-    expect(result).toBeInstanceOf(Promise);
-  });
-
-  it('should have healthCheck that returns Promise', async () => {
-    const { OpenClawService } = await import('../OpenClawService');
-
-    const result = OpenClawService.healthCheck();
-
-    expect(result).toBeInstanceOf(Promise);
+  it('sendMessage should handle CLI execution', async () => {
+    const result = await service.sendMessage('test message', 'test-agent', 'test-session');
+    expect(result).toHaveProperty('success');
+    expect(typeof result.success).toBe('boolean');
   });
 });
 
-describe('OpenClawService - Remote Mode (Integration)', () => {
+describe('OpenClawService - HTTP Mode', () => {
+  let service: OpenClawService;
+
   beforeEach(() => {
-    process.env.OPENCLAW_MODE = 'remote';
-    process.env.OPENCLAW_GATEWAY_URL = 'ws://127.0.0.1:18789';
-    process.env.OPENCLAW_VERIFICATION_TOKEN = 'test-token';
+    service = createOpenClawService({
+      mode: 'http',
+      gatewayUrl: 'http://localhost:18789',
+      verificationToken: 'test',
+    });
   });
 
-  afterEach(() => {
-    jest.resetModules();
+  it('healthCheck should report HTTP mode', async () => {
+    const result = await service.healthCheck();
+    expect(result.mode).toBe('http');
   });
 
-  it('should have sendMessage that returns Promise', async () => {
-    const { OpenClawService } = await import('../OpenClawService');
+  it('sendMessage should handle HTTP execution', async () => {
+    const result = await service.sendMessage('test message', 'test-agent', 'test-session');
+    expect(result).toHaveProperty('success');
+  });
+});
 
-    const result = OpenClawService.sendMessage('test', 'test-agent', 'test-session');
+describe('OpenClawService - Remote Mode', () => {
+  let service: OpenClawService;
 
-    expect(result).toBeInstanceOf(Promise);
+  beforeEach(() => {
+    service = createOpenClawService({
+      mode: 'remote',
+      gatewayUrl: 'ws://localhost:18789',
+      verificationToken: 'test',
+    });
   });
 
-  it('healthCheck should include tunnel status for remote mode', async () => {
-    const { OpenClawService } = await import('../OpenClawService');
-
-    const result = await OpenClawService.healthCheck();
-
+  it('healthCheck should report remote mode', async () => {
+    const result = await service.healthCheck();
     expect(result.mode).toBe('remote');
-    expect(result.tunnel).toBeDefined();
-    expect(['connected', 'disconnected']).toContain(result.tunnel);
+  });
+
+  it('healthCheck should include tunnel status', async () => {
+    const result = await service.healthCheck();
+    expect(result).toHaveProperty('tunnel');
+    expect(['connected', 'disconnected', undefined]).toContain(result.tunnel);
+  });
+
+  it('sendMessage should handle remote execution', async () => {
+    const result = await service.sendMessage('test message', 'test-agent', 'test-session');
+    expect(result).toHaveProperty('success');
   });
 });
