@@ -48,9 +48,12 @@ export function createApp(): express.Express {
 
   // Rate limiting for API routes (applied after middleware, before routes)
   if (process.env.NODE_ENV !== 'test') {
-    const { apiLimiter } = await import('./middleware/rateLimiter.js');
-    app.use('/api/', apiLimiter);
-    console.log('🛡️  Rate limiting enabled (100 req/15min)');
+    import('./middleware/rateLimiter.js')
+      .then(({ apiLimiter }) => {
+        app.use('/api/', apiLimiter);
+        console.log('🛡️  Rate limiting enabled (100 req/15min)');
+      })
+      .catch((err) => console.error('Failed to load rate limiter:', err));
   }
 
   // Health check endpoint
@@ -87,9 +90,12 @@ export function createApp(): express.Express {
 
   // API Documentation (Swagger/OpenAPI)
   if (process.env.NODE_ENV !== 'production') {
-    const { router: docsRouter } = await import('./routes/docs.js');
-    app.use('/api/docs', docsRouter);
-    console.log('📚 API Documentation: http://localhost:4000/api/docs');
+    import('./routes/docs.js')
+      .then(({ router: docsRouter }) => {
+        app.use('/api/docs', docsRouter);
+        console.log('📚 API Documentation: http://localhost:4000/api/docs');
+      })
+      .catch((err) => console.error('Failed to load docs router:', err));
   }
 
   // Debug routes (testing only - not for production)
@@ -122,8 +128,11 @@ export function createApp(): express.Express {
   }
 
   // Global error handler (must be last)
-  const { errorHandler } = await import('./middleware/errorHandler.js');
-  app.use(errorHandler);
+  import('./middleware/errorHandler.js')
+    .then(({ errorHandler }) => {
+      app.use(errorHandler);
+    })
+    .catch((err) => console.error('Failed to load error handler:', err));
 
   return app;
 }
