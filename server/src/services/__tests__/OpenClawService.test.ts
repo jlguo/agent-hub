@@ -5,6 +5,13 @@
  * Each test creates a fresh service instance.
  */
 
+import { vi } from 'vitest';
+
+// Mock exec utility to avoid actual CLI execution in tests
+vi.mock('../../utils/exec.js', () => ({
+  executeCommand: vi.fn().mockResolvedValue({ stdout: 'Mock response from CLI' }),
+}));
+
 import * as OpenClawServiceModule from '../OpenClawService.js';
 
 const { createOpenClawService, OpenClawService } = OpenClawServiceModule;
