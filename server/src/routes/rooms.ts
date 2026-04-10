@@ -1,11 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../index.js';
+import { ApiError, asyncHandler } from '../middleware/errorHandler.js';
 
 export const router = Router();
 
 // GET /api/rooms - List all rooms
-router.get('/', async (_req: Request, res: Response) => {
-  try {
+router.get(
+  '/',
+  asyncHandler(async (_req: Request, res: Response) => {
     const rooms = await prisma.room.findMany({
       include: {
         agents: {
@@ -19,18 +21,17 @@ router.get('/', async (_req: Request, res: Response) => {
     });
 
     res.json(rooms);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
+  })
+);
 
 // POST /api/rooms - Create room
-router.post('/', async (req: Request, res: Response) => {
-  try {
+router.post(
+  '/',
+  asyncHandler(async (req: Request, res: Response) => {
     const { name, type = 'family', description, context } = req.body;
 
     if (!name) {
-      return res.status(400).json({ error: 'Room name is required' });
+      throw ApiError.badRequest('Room name is required');
     }
 
     const room = await prisma.room.create({
@@ -44,14 +45,13 @@ router.post('/', async (req: Request, res: Response) => {
     });
 
     res.status(201).json(room);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
+  })
+);
 
 // GET /api/rooms/:id - Get room details
-router.get('/:id', async (req: Request, res: Response) => {
-  try {
+router.get(
+  '/:id',
+  asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const room = await prisma.room.findUnique({
@@ -69,14 +69,12 @@ router.get('/:id', async (req: Request, res: Response) => {
     });
 
     if (!room) {
-      return res.status(404).json({ error: 'Room not found' });
+      throw ApiError.notFound('Room');
     }
 
     res.json(room);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
+  })
+);
 
 // PUT /api/rooms/:id - Update room
 router.put('/:id', async (req: Request, res: Response) => {

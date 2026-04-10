@@ -107,6 +107,10 @@ export function createApp(): express.Express {
     });
   }
 
+  // Global error handler (must be last)
+  const { errorHandler } = await import('./middleware/errorHandler.js');
+  app.use(errorHandler);
+
   return app;
 }
 
