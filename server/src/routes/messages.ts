@@ -25,7 +25,7 @@ router.get('/rooms/:roomId', async (req: Request, res: Response) => {
     });
 
     // Transform messages to include agentName and agentAvatar at top level for frontend convenience
-    const transformedMessages = messages.map(msg => ({
+    const transformedMessages = messages.map((msg) => ({
       ...msg,
       agentName: msg.agent?.name || undefined,
       agentAvatar: msg.agent?.avatar || undefined,
@@ -38,7 +38,7 @@ router.get('/rooms/:roomId', async (req: Request, res: Response) => {
 });
 
 // POST /api/rooms/:roomId/messages - Send a message
-router.post('/rooms/:roomId', async (req: Request, res: Response) => {
+router.post('/rooms/:roomId/messages', async (req: Request, res: Response) => {
   try {
     const { roomId } = req.params;
     const { content, senderType = 'human', agentId } = req.body;
@@ -89,42 +89,49 @@ router.post('/rooms/:roomId', async (req: Request, res: Response) => {
     // Sync to Feishu if room has externalChatId (Feishu group)
     if (senderType === 'human' && room.externalChatId && room.externalChatId !== 'N/A') {
       const feishuService = new FeishuService();
-      feishuService.sendMessage(room.externalChatId, content)
+      feishuService
+        .sendMessage(room.externalChatId, content)
         .then(() => console.log('[MessagesRoute] ✅ Web UI message synced to Feishu'))
-        .catch(err => console.error('[MessagesRoute] ❌ Feishu sync failed:', err.message));
+        .catch((err) => console.error('[MessagesRoute] ❌ Feishu sync failed:', err.message));
     }
 
     // If human message, check for discussion trigger or normal agent response
     if (senderType === 'human') {
       // Check if this is a discussion trigger
-      const discussionTopic = content.match(/^\/discuss\s+(.+)/i)?.[1]?.trim() ||
-                             content.match(/^let's discuss\s+(.+)/i)?.[1]?.trim() ||
-                             content.match(/^咱们讨论一下\s*(.+)/i)?.[1]?.trim();
-      
+      const discussionTopic =
+        content.match(/^\/discuss\s+(.+)/i)?.[1]?.trim() ||
+        content.match(/^let's discuss\s+(.+)/i)?.[1]?.trim() ||
+        content.match(/^咱们讨论一下\s*(.+)/i)?.[1]?.trim();
+
       if (discussionTopic) {
         // Trigger autonomous agent discussion
         console.log(`[MessagesRoute] Discussion triggered: "${discussionTopic}"`);
-        
+
         // Get room to check if Feishu sync is needed
         const roomWithChatId = await prisma.room.findUnique({
           where: { id: roomId },
           select: { externalChatId: true },
         });
-        
+
         // Send to Feishu if room has externalChatId
-        const sendToFeishu = roomWithChatId?.externalChatId && roomWithChatId.externalChatId !== 'N/A'
-          ? async (chatId: string, content: string) => {
-              const feishuService = new FeishuService();
-              await feishuService.sendMessage(chatId, content);
-            }
-          : undefined;
-        
-        triggerAgentDiscussion(roomId, discussionTopic, undefined, sendToFeishu, roomWithChatId?.externalChatId || undefined)
-          .catch(console.error);
+        const sendToFeishu =
+          roomWithChatId?.externalChatId && roomWithChatId.externalChatId !== 'N/A'
+            ? async (chatId: string, content: string) => {
+                const feishuService = new FeishuService();
+                await feishuService.sendMessage(chatId, content);
+              }
+            : undefined;
+
+        triggerAgentDiscussion(
+          roomId,
+          discussionTopic,
+          undefined,
+          sendToFeishu,
+          roomWithChatId?.externalChatId || undefined
+        ).catch(console.error);
       } else {
         // Normal agent response
-        triggerAgentResponse(roomId, content, room.description || undefined)
-          .catch(console.error);
+        triggerAgentResponse(roomId, content, room.description || undefined).catch(console.error);
       }
     }
 

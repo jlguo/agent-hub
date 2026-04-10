@@ -72,7 +72,9 @@ describe('Messages API - GET /api/messages/rooms/:roomId', () => {
         data: createTestRoomData({ name: 'test-room' }) as any,
       });
       const agent = await prisma.agent.create({
-        data: createTestAgentData({ id: 'family-mom' }) as any,
+        data: {
+          ...createTestAgentData({ id: 'family-mom', roomId: room.id }),
+        },
       });
 
       await prisma.message.create({
@@ -99,7 +101,7 @@ describe('Messages API - GET /api/messages/rooms/:roomId', () => {
       });
       const agent = await prisma.agent.create({
         data: {
-          ...createTestAgentData({ id: 'family-dad', name: 'Dad' }),
+          ...createTestAgentData({ id: 'family-dad', name: 'Dad', roomId: room.id }),
           avatar: '👨',
         },
       });
@@ -185,7 +187,7 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
         data: createTestRoomData({ name: 'test-room' }) as any,
       });
       const agent = await prisma.agent.create({
-        data: createTestAgentData({ id: 'family-mom', name: 'Mom' }),
+        data: createTestAgentData({ id: 'family-mom', name: 'Mom', roomId: room.id }),
       });
 
       const response = await request(app)
@@ -233,7 +235,7 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
         data: createTestRoomData({ name: 'test-room' }) as any,
       });
       await prisma.agent.create({
-        data: createTestAgentData({ id: 'family-mom', name: 'Mom' }) as any,
+        data: createTestAgentData({ id: 'family-mom', name: 'Mom', roomId: room.id }) as any,
       });
 
       // Mock OpenClawService to avoid actual CLI calls
@@ -266,7 +268,7 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
         data: createTestRoomData({ name: 'test-room' }) as any,
       });
       await prisma.agent.create({
-        data: createTestAgentData({ id: 'family-mom', name: 'Mom' }) as any,
+        data: createTestAgentData({ id: 'family-mom', name: 'Mom', roomId: room.id }) as any,
       });
 
       const response = await request(app)
@@ -347,7 +349,7 @@ describe('Messages API - Message Transformation', () => {
       });
       const agent = await prisma.agent.create({
         data: {
-          ...createTestAgentData({ id: 'family-bro', name: 'Bro' }),
+          ...createTestAgentData({ id: 'family-bro', name: 'Bro', roomId: room.id }),
           name: 'Bro',
           avatar: '👦',
         },
