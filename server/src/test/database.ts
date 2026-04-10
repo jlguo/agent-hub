@@ -13,8 +13,9 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-// Test database path
-const TEST_DB_PATH = './prisma/test.db';
+// Test database path (relative to project root)
+const TEST_DB_PATH = '../prisma/test.db';
+const SCHEMA_PATH = '../prisma/schema.prisma';
 
 /**
  * Create a fresh test database
@@ -29,7 +30,7 @@ export async function setupTestDatabase(): Promise<void> {
     await execAsync(`rm -f ${TEST_DB_PATH}`);
 
     // Use db push instead of migrate for faster setup (schema only, no migration history)
-    await execAsync(`DATABASE_URL=file:${TEST_DB_PATH} npx prisma db push`);
+    await execAsync(`DATABASE_URL=file:${TEST_DB_PATH} npx prisma db push --schema=${SCHEMA_PATH}`);
 
     console.log('✅ Test database created successfully');
   } catch (error: any) {
@@ -51,13 +52,27 @@ export async function cleanupTestDatabase(): Promise<void> {
       },
     });
 
-    // Delete all data in reverse order of dependencies
-    await prisma.message.deleteMany();
-    await prisma.discussion.deleteMany();
-    await prisma.relationship.deleteMany();
-    await prisma.agent.deleteMany();
-    await prisma.room.deleteMany();
-    await prisma.session.deleteMany();
+    // Delete all data in reverse order of dependencies (ignore errors if tables don't exist)
+    /* eslint-disable no-empty */
+    try {
+      await prisma.message.deleteMany();
+    } catch {}
+    try {
+      await prisma.discussion.deleteMany();
+    } catch {}
+    try {
+      await prisma.relationship.deleteMany();
+    } catch {}
+    try {
+      await prisma.agent.deleteMany();
+    } catch {}
+    try {
+      await prisma.room.deleteMany();
+    } catch {}
+    try {
+      await prisma.session.deleteMany();
+    } catch {}
+    /* eslint-enable no-empty */
 
     await prisma.$disconnect();
 

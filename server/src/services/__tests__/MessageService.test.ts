@@ -3,10 +3,20 @@
  * Simplified tests focusing on core functionality
  */
 
+import { describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
 import { testPrisma } from '../../test/setup';
+import { setupTestDatabase, cleanupTestDatabase } from '../../test/database';
 
 describe('MessageService', () => {
   let testRoomId: string;
+
+  beforeAll(async () => {
+    await setupTestDatabase();
+  });
+
+  afterAll(async () => {
+    await cleanupTestDatabase();
+  });
 
   beforeEach(async () => {
     // Create test room

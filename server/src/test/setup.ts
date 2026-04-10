@@ -8,7 +8,7 @@ import { vi } from 'vitest';
 
 // Test Prisma client for tests that need database access
 export const testPrisma = new PrismaClient({
-  datasourceUrl: process.env.DATABASE_URL || 'file:./prisma/dev.db',
+  datasourceUrl: process.env.DATABASE_URL || 'file:../prisma/test.db',
 });
 
 // Mock console.error to reduce noise in tests
