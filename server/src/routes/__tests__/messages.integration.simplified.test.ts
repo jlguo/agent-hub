@@ -138,14 +138,14 @@ describe('Messages API - GET /api/messages/rooms/:roomId', () => {
   });
 });
 
-describe('Messages API - POST /api/rooms/:roomId/messages', () => {
+describe('Messages API - POST /api/messages/rooms/:roomId/messages', () => {
   it('should create human message successfully', async () => {
     const room = await prisma.room.create({
       data: createTestRoomData({ name: 'test-room-5' }) as any,
     });
 
     const response = await request(app)
-      .post(`/api/messages/rooms/${room.id}`)
+      .post(`/api/messages/rooms/${room.id}/messages`)
       .send({
         content: 'Hello family!',
         senderType: 'human',
@@ -167,7 +167,7 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
     });
 
     const response = await request(app)
-      .post(`/api/messages/rooms/${room.id}`)
+      .post(`/api/messages/rooms/${room.id}/messages`)
       .send({
         content: 'Mom here',
         senderType: 'agent',
@@ -186,7 +186,7 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
     });
 
     const response = await request(app)
-      .post(`/api/messages/rooms/${room.id}`)
+      .post(`/api/messages/rooms/${room.id}/messages`)
       .send({ senderType: 'human' })
       .expect(400);
 
@@ -195,7 +195,7 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
 
   it('should return 404 for non-existent room', async () => {
     const response = await request(app)
-      .post('/api/messages/rooms/non-existent-room')
+      .post('/api/messages/rooms/non-existent-room/messages')
       .send({ content: 'Test' })
       .expect(404);
 
@@ -208,7 +208,7 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
     });
 
     const response = await request(app)
-      .post(`/api/messages/rooms/${room.id}`)
+      .post(`/api/messages/rooms/${room.id}/messages`)
       .send({ content: '', senderType: 'human' })
       .expect(400);
 

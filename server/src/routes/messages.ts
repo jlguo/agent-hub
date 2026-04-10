@@ -8,6 +8,7 @@ import { FeishuService } from '../services/FeishuService.js';
 export const router = Router();
 
 // GET /api/messages/rooms/:roomId - Get messages for a room
+// GET /api/messages/rooms/:roomId - Get messages for a room
 router.get('/rooms/:roomId', async (req: Request, res: Response) => {
   try {
     const { roomId } = req.params;
@@ -37,7 +38,7 @@ router.get('/rooms/:roomId', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/rooms/:roomId/messages - Send a message
+// POST /api/messages/rooms/:roomId/messages - Send a message
 router.post('/rooms/:roomId/messages', async (req: Request, res: Response) => {
   try {
     const { roomId } = req.params;

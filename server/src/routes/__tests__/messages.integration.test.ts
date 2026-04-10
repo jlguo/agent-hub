@@ -73,7 +73,7 @@ describe('Messages API - GET /api/messages/rooms/:roomId', () => {
       });
       const agent = await prisma.agent.create({
         data: {
-          ...createTestAgentData({ id: 'family-mom', roomId: room.id }),
+          ...createTestAgentData({ id: 'family-mom', name: 'Mom', roomId: room.id }),
         },
       });
 
@@ -168,7 +168,7 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
       });
 
       const response = await request(app)
-        .post(`/api/rooms/${room.id}/messages`)
+        .post(`/api/messages/rooms/${room.id}/messages`)
         .send({
           content: 'Hello family!',
           senderType: 'human',
@@ -191,7 +191,7 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
       });
 
       const response = await request(app)
-        .post(`/api/rooms/${room.id}/messages`)
+        .post(`/api/messages/rooms/${room.id}/messages`)
         .send({
           content: 'Mom here',
           senderType: 'agent',
@@ -212,7 +212,7 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
       });
 
       const response = await request(app)
-        .post(`/api/rooms/${room.id}/messages`)
+        .post(`/api/messages/rooms/${room.id}/messages`)
         .send({ senderType: 'human' })
         .expect(400);
 
@@ -222,7 +222,7 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
 
   it('should return 404 for non-existent room', async () => {
     const response = await request(app)
-      .post('/api/rooms/non-existent-room/messages')
+      .post('/api/messages/rooms/non-existent-room/messages')
       .send({ content: 'Test' })
       .expect(404);
 
@@ -247,7 +247,7 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
       }));
 
       const response = await request(app)
-        .post(`/api/rooms/${room.id}/messages`)
+        .post(`/api/messages/rooms/${room.id}/messages`)
         .send({
           content: 'Hello',
           senderType: 'human',
@@ -272,7 +272,7 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
       });
 
       const response = await request(app)
-        .post(`/api/rooms/${room.id}/messages`)
+        .post(`/api/messages/rooms/${room.id}/messages`)
         .send({
           content: '/discuss What should we have for dinner?',
           senderType: 'human',
@@ -293,7 +293,7 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
       });
 
       const response = await request(app)
-        .post(`/api/rooms/${room.id}/messages`)
+        .post(`/api/messages/rooms/${room.id}/messages`)
         .send({ content: '', senderType: 'human' })
         .expect(400);
 
