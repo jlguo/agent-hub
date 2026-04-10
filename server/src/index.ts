@@ -85,6 +85,13 @@ export function createApp(): express.Express {
   app.use('/api/webhooks', webhookRouter);
   app.use('/api/openclaw', openclawGatewayRouter);
 
+  // API Documentation (Swagger/OpenAPI)
+  if (process.env.NODE_ENV !== 'production') {
+    const { router: docsRouter } = await import('./routes/docs.js');
+    app.use('/api/docs', docsRouter);
+    console.log('📚 API Documentation: http://localhost:4000/api/docs');
+  }
+
   // Debug routes (testing only - not for production)
   if (process.env.NODE_ENV !== 'production') {
     app.use('/api/debug', debugRouter);
