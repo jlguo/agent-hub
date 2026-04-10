@@ -2,6 +2,11 @@ import { prisma } from '../lib/prisma.js';
 import { getIO } from '../lib/socket.js';
 import { OpenClawService, AgentContext } from './OpenClawService.js';
 import { Agent, Relationship } from '@prisma/client';
+import {
+  heatConfig,
+  getResponseProbability,
+  calculateHeatIncrement,
+} from '../config/heat.config.js';
 
 /**
  * Extended Agent type with relationships included
@@ -9,24 +14,6 @@ import { Agent, Relationship } from '@prisma/client';
 type AgentWithRelationships = Agent & {
   relationshipsAsA: Relationship[];
   relationshipsAsB: Relationship[];
-};
-
-/**
- * Heat System Configuration
- * Tuned for natural conversation flow
- */
-const HEAT_CONFIG = {
-  BASE_INCREMENT: 25, // Base heat per message
-  USER_MESSAGE_MULTIPLIER: 2.0, // User messages = 50 heat (WARM zone)
-  AGENT_MESSAGE_MULTIPLIER: 0.8, // Agent messages = 20 heat (maintains warmth)
-  DECAY_RATE: 0.12, // 12% decay per 30s cycle (slower decay)
-  DECAY_INTERVAL_MS: 30000, // 30 seconds
-  THRESHOLDS: {
-    HOT: 70, // 80% response probability
-    WARM: 40, // 60% response probability
-    COLD: 20, // 40% response probability
-    INACTIVE: 5, // 20% response probability
-  },
 };
 
 /**
@@ -619,9 +606,10 @@ async function triggerAgentResponseWithCallback(
       }
     }
 
-    // If no @mentions, use heat-based selection
+    // If no @mentions, use heat-based probability
     if (selectedAgents.length === 0) {
-      // Random selection with heat-based probability
+      // Use default 60% probability (WARM zone)
+      // TODO: Integrate with HeatTracker for dynamic probability based on discussion heat
       const responseChance = Math.random();
       const shouldRespond = responseChance < 0.6; // 60% base chance
 
