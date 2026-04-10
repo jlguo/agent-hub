@@ -250,20 +250,30 @@ export async function triggerAgentResponse(
           currentTopic: undefined,
         };
 
-        // Get AI response via OpenClaw CLI
-        const response = await OpenClawService.sendMessage(
-          finalMessage,
-          respondingAgent.id,
-          roomId,
-          agentContext,
-          deliver,
-          replyAccount,
-          replyTo
-        );
+        // Get AI response via OpenClaw CLI with error handling
+        let response: { content: string };
+        try {
+          response = await OpenClawService.sendMessage(
+            finalMessage,
+            respondingAgent.id,
+            roomId,
+            agentContext,
+            deliver,
+            replyAccount,
+            replyTo
+          );
+          console.log(
+            `[MessageService] AI response received from ${respondingAgent.name} (${response.content.length} chars)`
+          );
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.error('[MessageService] ❌ Critical error in agent response:', errorMessage);
 
-        console.log(
-          `[MessageService] AI response received from ${respondingAgent.name} (${response.content.length} chars)`
-        );
+          // Use fallback response to maintain user experience
+          response = {
+            content: generateSmartFallback(message, respondingAgent),
+          };
+        }
 
         // Save agent response to database
         const agentMessage = await prisma.message.create({
@@ -375,16 +385,28 @@ export async function triggerAgentResponse(
                         currentTopic: undefined,
                       };
 
-                      // Get AI response
-                      const response = await OpenClawService.sendMessage(
-                        agentMessage.content,
-                        mentionedAgent.id,
-                        roomId,
-                        agentContext,
-                        deliver,
-                        replyAccount,
-                        replyTo
-                      );
+                      // Get AI response with error handling
+                      let response: { content: string };
+                      try {
+                        response = await OpenClawService.sendMessage(
+                          agentMessage.content,
+                          mentionedAgent.id,
+                          roomId,
+                          agentContext,
+                          deliver,
+                          replyAccount,
+                          replyTo
+                        );
+                      } catch (error) {
+                        const errorMessage =
+                          error instanceof Error ? error.message : 'Unknown error';
+                        console.error(
+                          `[MessageService] ❌ Error in ${mentionedAgent.name} @mention response:`,
+                          errorMessage
+                        );
+                        // Skip this agent's response but continue with others
+                        return;
+                      }
 
                       // Save and emit
                       const followupMessage = await prisma.message.create({
@@ -624,26 +646,35 @@ async function triggerAgentResponseWithCallback(
         // Generate OpenClaw session ID (format: family-{agentName})
         const sessionId = `family-${agent.name.toLowerCase()}`;
 
-        const response = await OpenClawService.sendMessage(
-          userMessage,
-          agent.id,
-          sessionId,
-          {
-            agentName: agent.name,
-            agentRole: agent.role || 'Family member',
-            personality: {
-              talkativeness: agent.talkativeness || 7,
-              empathy: agent.empathy || 6,
-              curiosity: agent.curiosity || 8,
+        // Get AI response with error handling
+        let response: { content: string };
+        try {
+          response = await OpenClawService.sendMessage(
+            userMessage,
+            agent.id,
+            sessionId,
+            {
+              agentName: agent.name,
+              agentRole: agent.role || 'Family member',
+              personality: {
+                talkativeness: agent.talkativeness || 7,
+                empathy: agent.empathy || 6,
+                curiosity: agent.curiosity || 8,
+              },
+              relationships: [],
+              recentHistory: [],
+              roomContext: 'Family conversation',
             },
-            relationships: [],
-            recentHistory: [],
-            roomContext: 'Family conversation',
-          },
-          false, // Don't deliver to Feishu (we use callback)
-          undefined,
-          undefined
-        );
+            false, // Don't deliver to Feishu (we use callback)
+            undefined,
+            undefined
+          );
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.error('[MessageService] ❌ Error in agent response:', errorMessage);
+          // Skip this agent but continue with others
+          continue;
+        }
 
         // Save agent response
         const agentMessage = await prisma.message.create({

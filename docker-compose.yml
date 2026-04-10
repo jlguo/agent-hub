@@ -10,19 +10,24 @@ services:
     env_file:
       - .env
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=file:/app/prisma/dev.db
-      - OPENCLAW_MODE=remote
-      - OPENCLAW_GATEWAY_URL=ws://127.0.0.1:18789
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL:-file:/app/prisma/dev.db}
+      - OPENCLAW_MODE=${OPENCLAW_MODE:-remote}
+      - OPENCLAW_GATEWAY_URL=${OPENCLAW_GATEWAY_URL:-ws://127.0.0.1:18789}
       - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}
       - OPENCLAW_VERIFICATION_TOKEN=${OPENCLAW_VERIFICATION_TOKEN}
-      - OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=1
+      - OPENCLAW_ALLOW_INSECURE_PRIVATE_WS=${OPENCLAW_ALLOW_INSECURE_PRIVATE_WS:-1}
       - FEISHU_APP_ID=${FEISHU_APP_ID}
       - FEISHU_APP_SECRET=${FEISHU_APP_SECRET}
       - FEISHU_CHAT_ID=${FEISHU_CHAT_ID}
       - FEISHU_VERIFY_TOKEN=${FEISHU_VERIFY_TOKEN}
       - JWT_SECRET=${JWT_SECRET}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      # Heat system configuration
+      - HEAT_BASE_INCREMENT=${HEAT_BASE_INCREMENT:-25}
+      - HEAT_USER_MULTIPLIER=${HEAT_USER_MULTIPLIER:-2.0}
+      - HEAT_AGENT_MULTIPLIER=${HEAT_AGENT_MULTIPLIER:-0.8}
+      - HEAT_DECAY_RATE=${HEAT_DECAY_RATE:-0.12}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

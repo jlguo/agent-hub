@@ -4,11 +4,18 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { vi } from 'vitest';
+import { vi, afterAll } from 'vitest';
 
 // Test Prisma client for tests that need database access
 export const testPrisma = new PrismaClient({
   datasourceUrl: process.env.DATABASE_URL || 'file:../prisma/test.db',
+});
+
+// Cleanup database connections after all tests
+afterAll(async () => {
+  if (testPrisma) {
+    await testPrisma.$disconnect();
+  }
 });
 
 // Mock console.error to reduce noise in tests
