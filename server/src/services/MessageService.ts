@@ -1,6 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import { getIO } from '../lib/socket.js';
-import { OpenClawService, AgentContext } from './OpenClawService.js';
+import { openClawService } from './OpenClawService.js';
 import { Agent, Relationship } from '@prisma/client';
 import {
   heatConfig,
@@ -64,6 +64,35 @@ function setCooldown(agentId: string) {
         MENTION_COOLDOWNS.delete(id);
       }
     }
+  }
+}
+
+/**
+ * Generate smart fallback response when AI fails
+ * Uses agent personality to create relevant fallback
+ */
+function generateSmartFallback(message: string, agent: Agent): string {
+  const agentName = agent.name || 'Agent';
+  const talkativeness = agent.talkativeness || 7;
+  const empathy = agent.empathy || 6;
+  const curiosity = agent.curiosity || 8;
+
+  // Clean up message for context
+  const cleanMessage = message.trim();
+
+  // Determine response style based on personality
+  if (empathy >= 8) {
+    // High empathy - caring, supportive
+    return `${agentName}: I hear you. ${cleanMessage.substring(0, 50)}${cleanMessage.length > 50 ? '...' : ''} Let me think about this.`;
+  } else if (curiosity >= 8) {
+    // High curiosity - asking questions
+    return `${agentName}: That's interesting! Tell me more about "${cleanMessage.substring(0, 30).replace(/"/g, '')}"... What made you think of that?`;
+  } else if (talkativeness >= 7) {
+    // Talkative - sharing thoughts
+    return `${agentName}: I understand. To be honest, I've been thinking about ${cleanMessage.substring(0, 40).replace(/"/g, '')} too. We should talk more about this!`;
+  } else {
+    // Default - neutral response
+    return `${agentName}: Okay, I hear you.`;
   }
 }
 
@@ -214,51 +243,33 @@ export async function triggerAgentResponse(
           ? `${userMessage} (Note: A user mentioned someone with "@${parseMentions(userMessage).join(', @')}" but that person isn't in our family. Politely clarify this and respond helpfully instead.)`
           : userMessage;
 
-        const agentContext: AgentContext = {
-          agentName: respondingAgent.name,
-          agentRole: respondingAgent.role || 'Family member',
-          personality: {
-            talkativeness: respondingAgent.talkativeness || 7,
-            empathy: respondingAgent.empathy || 6,
-            curiosity: respondingAgent.curiosity || 8,
-          },
-          relationships: allRelationships.map((r) => {
-            // Get the other agent's name (not the current agent)
-            const isAgentA = r.agentAId === respondingAgent.id;
-            const otherAgentId = isAgentA ? r.agentBId : r.agentAId;
-            return {
-              with: otherAgentId,
-              type: r.type,
-              strength: r.strength,
-            };
-          }),
-          roomContext: roomContext || 'Family conversation',
-          recentHistory: formattedHistory,
-          currentTopic: undefined,
-        };
-
         // Get AI response via OpenClaw CLI with error handling
         let response: { content: string };
         try {
-          response = await OpenClawService.sendMessage(
+          // Generate session ID for agent (format: family-{agentName})
+          const sessionId = `family-${respondingAgent.name.toLowerCase()}`;
+
+          const result = await openClawService.sendMessage(
             finalMessage,
             respondingAgent.id,
-            roomId,
-            agentContext,
-            deliver,
-            replyAccount,
-            replyTo
+            sessionId
           );
-          console.log(
-            `[MessageService] AI response received from ${respondingAgent.name} (${response.content.length} chars)`
-          );
+
+          if (result.success && result.response) {
+            console.log(
+              `[MessageService] AI response received from ${respondingAgent.name} (${result.response.length} chars)`
+            );
+            response = { content: result.response };
+          } else {
+            throw new Error(result.error || 'OpenClaw send failed');
+          }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           console.error('[MessageService] ❌ Critical error in agent response:', errorMessage);
 
           // Use fallback response to maintain user experience
           response = {
-            content: generateSmartFallback(message, respondingAgent),
+            content: generateSmartFallback(finalMessage, respondingAgent),
           };
         }
 
@@ -350,40 +361,26 @@ export async function triggerAgentResponse(
                         ...(mentionedAgent.relationshipsAsB || []),
                       ];
 
-                      const agentContext: AgentContext = {
-                        agentName: mentionedAgent.name,
-                        agentRole: mentionedAgent.role || 'Family member',
-                        personality: {
-                          talkativeness: mentionedAgent.talkativeness || 7,
-                          empathy: mentionedAgent.empathy || 6,
-                          curiosity: mentionedAgent.curiosity || 8,
-                        },
-                        relationships: allRelationships.map((r) => {
-                          const isAgentA = r.agentAId === mentionedAgent.id;
-                          const otherAgentId = isAgentA ? r.agentBId : r.agentAId;
-                          return {
-                            with: otherAgentId,
-                            type: r.type,
-                            strength: r.strength,
-                          };
-                        }),
-                        roomContext: roomContext || 'Family conversation',
-                        recentHistory: formattedHistory,
-                        currentTopic: undefined,
-                      };
-
                       // Get AI response with error handling
                       let response: { content: string };
                       try {
-                        response = await OpenClawService.sendMessage(
+                        // Generate session ID for mentioned agent
+                        const sessionId = `family-${mentionedAgent.name.toLowerCase()}`;
+
+                        const result = await openClawService.sendMessage(
                           agentMessage.content,
                           mentionedAgent.id,
-                          roomId,
-                          agentContext,
-                          deliver,
-                          replyAccount,
-                          replyTo
+                          sessionId
                         );
+
+                        if (result.success && result.response) {
+                          console.log(
+                            `[MessageService] AI response from ${mentionedAgent.name} (${result.response.length} chars)`
+                          );
+                          response = { content: result.response };
+                        } else {
+                          throw new Error(result.error || 'OpenClaw send failed');
+                        }
                       } catch (error) {
                         const errorMessage =
                           error instanceof Error ? error.message : 'Unknown error';
@@ -637,26 +634,13 @@ async function triggerAgentResponseWithCallback(
         // Get AI response with error handling
         let response: { content: string };
         try {
-          response = await OpenClawService.sendMessage(
-            userMessage,
-            agent.id,
-            sessionId,
-            {
-              agentName: agent.name,
-              agentRole: agent.role || 'Family member',
-              personality: {
-                talkativeness: agent.talkativeness || 7,
-                empathy: agent.empathy || 6,
-                curiosity: agent.curiosity || 8,
-              },
-              relationships: [],
-              recentHistory: [],
-              roomContext: 'Family conversation',
-            },
-            false, // Don't deliver to Feishu (we use callback)
-            undefined,
-            undefined
-          );
+          const result = await openClawService.sendMessage(userMessage, agent.id, sessionId);
+
+          if (result.success && result.response) {
+            response = { content: result.response };
+          } else {
+            throw new Error(result.error || 'OpenClaw send failed');
+          }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           console.error('[MessageService] ❌ Error in agent response:', errorMessage);
