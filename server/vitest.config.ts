@@ -15,10 +15,10 @@ export default defineConfig({
       exclude: ['**/*.d.ts', '**/__tests__/**', '**/lib/prisma.ts', '**/index.ts'],
       thresholds: {
         global: {
-          branches: 20,
-          functions: 25,
-          lines: 25,
-          statements: 25,
+          branches: 40,
+          functions: 40,
+          lines: 40,
+          statements: 40,
         },
       },
     },
@@ -27,6 +27,6 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
     pool: 'forks',
-    maxWorkers: 1,
+    maxWorkers: 2,
   },
 });

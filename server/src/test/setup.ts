@@ -5,10 +5,21 @@
 
 import { PrismaClient } from '@prisma/client';
 import { vi, afterAll } from 'vitest';
+import path from 'path';
+
+// Resolve absolute test DB path (setup.ts is at server/src/test/setup.ts)
+export const TEST_DB_ABSOLUTE = path.resolve(__dirname, '../../prisma/test.db');
+
+// Override DATABASE_URL for test environment before any module reads it.
+// The .env file may contain a Docker container path (file:/app/prisma/dev.db)
+// which doesn't exist locally. This must run before index.ts creates its PrismaClient.
+if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes('/app/')) {
+  process.env.DATABASE_URL = `file:${TEST_DB_ABSOLUTE}`;
+}
 
 // Test Prisma client for tests that need database access
 export const testPrisma = new PrismaClient({
-  datasourceUrl: process.env.DATABASE_URL || 'file:../prisma/test.db',
+  datasourceUrl: `file:${TEST_DB_ABSOLUTE}`,
 });
 
 // Cleanup database connections after all tests

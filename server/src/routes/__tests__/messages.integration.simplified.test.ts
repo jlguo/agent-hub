@@ -9,13 +9,16 @@ import request from 'supertest';
 import { prisma } from '../../index';
 import { createTestAgentData, createTestRoomData } from '../../test/test-utils';
 import { createApp } from '../../index';
+import { setupTestDatabase } from '../../test/database';
 import { Server } from 'http';
 
 let app: any;
 let server: Server;
 
-// Disable global test setup
+// Setup test database before all tests
 beforeAll(async () => {
+  await setupTestDatabase();
+
   // Create app instance for testing
   app = createApp();
 
@@ -55,7 +58,7 @@ describe('Messages API - GET /api/messages/rooms/:roomId', () => {
 
     const response = await request(app).get(`/api/messages/rooms/${room.id}`).expect(200);
 
-    expect(response.body).toEqual([]);
+    expect(response.body.messages).toEqual([]);
   });
 
   it('should return messages for room', async () => {
@@ -78,9 +81,9 @@ describe('Messages API - GET /api/messages/rooms/:roomId', () => {
 
     const response = await request(app).get(`/api/messages/rooms/${room.id}`).expect(200);
 
-    expect(response.body).toHaveLength(1);
-    expect(response.body[0].content).toBe('Hello from Mom');
-    expect(response.body[0].agentName).toBe('Mom');
+    expect(response.body.messages).toHaveLength(1);
+    expect(response.body.messages[0].content).toBe('Hello from Mom');
+    expect(response.body.messages[0].agentName).toBe('Mom');
   });
 
   it('should include agent information in messages', async () => {
@@ -106,14 +109,14 @@ describe('Messages API - GET /api/messages/rooms/:roomId', () => {
 
     const response = await request(app).get(`/api/messages/rooms/${room.id}`).expect(200);
 
-    expect(response.body[0].agentName).toBe('Dad');
-    expect(response.body[0].agentAvatar).toBe('👨');
+    expect(response.body.messages[0].agentName).toBe('Dad');
+    expect(response.body.messages[0].agentAvatar).toBe('👨');
   });
 
   it('should handle non-existent room gracefully', async () => {
     const response = await request(app).get('/api/messages/rooms/non-existent-room').expect(200);
 
-    expect(response.body).toEqual([]);
+    expect(response.body.messages).toEqual([]);
   });
 
   it('should respect limit parameter', async () => {
@@ -134,7 +137,7 @@ describe('Messages API - GET /api/messages/rooms/:roomId', () => {
 
     const response = await request(app).get(`/api/messages/rooms/${room.id}?limit=5`).expect(200);
 
-    expect(response.body).toHaveLength(5);
+    expect(response.body.messages).toHaveLength(5);
   });
 });
 
@@ -224,14 +227,14 @@ describe('Messages API - Error Handling', () => {
 
     const response = await request(app).get(`/api/messages/rooms/${room.id}`).expect(200);
 
-    expect(response.body).toBeDefined();
+    expect(response.body.messages).toBeDefined();
   });
 
   it('should handle invalid room ID format', async () => {
     const response = await request(app).get('/api/messages/rooms/invalid!@#$').expect(200);
 
     // Should return empty array, not crash
-    expect(response.body).toEqual([]);
+    expect(response.body.messages).toEqual([]);
   });
 });
 
@@ -259,7 +262,7 @@ describe('Messages API - Message Transformation', () => {
 
     const response = await request(app).get(`/api/messages/rooms/${room.id}`).expect(200);
 
-    const message = response.body[0];
+    const message = response.body.messages[0];
     expect(message.agentName).toBe('Bro');
     expect(message.agentAvatar).toBe('👦');
     expect(message.content).toBe('Bro message');
@@ -280,7 +283,7 @@ describe('Messages API - Message Transformation', () => {
 
     const response = await request(app).get(`/api/messages/rooms/${room.id}`).expect(200);
 
-    const message = response.body[0];
+    const message = response.body.messages[0];
     expect(message.agentName).toBeUndefined();
     expect(message.agentAvatar).toBeUndefined();
     expect(message.content).toBe('Human message');
@@ -308,7 +311,7 @@ describe('Messages API - Performance', () => {
 
     const duration = Date.now() - startTime;
 
-    expect(response.body).toHaveLength(100);
+    expect(response.body.messages).toHaveLength(100);
     expect(duration).toBeLessThan(1000); // Should complete in <1s
   });
 });

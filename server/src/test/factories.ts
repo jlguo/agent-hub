@@ -24,9 +24,7 @@ export function createTestDiscussion(
     topic: overrides.topic || 'Test Discussion',
     status: overrides.status || 'active',
     heatScore: overrides.heatScore ?? 50,
-    lastActivityAt: overrides.lastActivityAt || new Date(),
     archivedAt: overrides.archivedAt || null,
-    metadata: overrides.metadata || null,
   };
 }
 
@@ -51,7 +49,7 @@ export function createTestRelationship(
     agentBId: overrides.agentBId || 'agent-b-id',
     type: overrides.type || 'friend',
     strength: overrides.strength ?? 50,
-    metadata: overrides.metadata || null,
+    context: overrides.context || null,
   };
 }
 
@@ -69,15 +67,13 @@ export function createTestRelationship(
  */
 export function createTestSession(
   overrides: Partial<Session> = {}
-): Omit<Session, 'id' | 'createdAt' | 'updatedAt'> {
+): Omit<Session, 'id' | 'createdAt' | 'room'> {
   return {
     roomId: overrides.roomId || 'test-room-id',
-    gatewayId: overrides.gatewayId || null,
+    sessionId: overrides.sessionId || 'test-session-id',
     status: overrides.status || 'active',
-    lastActivityAt: overrides.lastActivityAt || new Date(),
     expiresAt: overrides.expiresAt || null,
-    terminatedAt: overrides.terminatedAt || null,
-    metadata: overrides.metadata || null,
+    lastUsedAt: overrides.lastUsedAt || new Date(),
   };
 }
 
@@ -131,16 +127,15 @@ export function generateTestId(prefix: string = 'test'): string {
  * @example
  * const messages = createMultipleTestItems(createTestMessage, 5, { roomId: 'room-123' });
  */
-export function createMultipleTestItems<T>(
+export function createMultipleTestItems<T extends Record<string, any>>(
   factory: (overrides: Partial<T>) => Omit<T, 'id' | 'createdAt' | 'updatedAt'>,
   count: number,
   baseOverrides: Partial<T> = {}
 ): Array<Omit<T, 'id' | 'createdAt' | 'updatedAt'>> {
-  return Array.from({ length: count }, (_, i) =>
-    factory({
-      ...baseOverrides,
-      topic: baseOverrides.topic ? `${baseOverrides.topic} ${i + 1}` : undefined,
-      content: baseOverrides.content ? `${baseOverrides.content} ${i + 1}` : undefined,
-    } as Partial<T>)
-  );
+  return Array.from({ length: count }, (_, i) => {
+    const itemOverrides: Record<string, any> = { ...baseOverrides };
+    if (baseOverrides.topic) itemOverrides.topic = `${baseOverrides.topic} ${i + 1}`;
+    if (baseOverrides.content) itemOverrides.content = `${baseOverrides.content} ${i + 1}`;
+    return factory(itemOverrides as Partial<T>);
+  });
 }

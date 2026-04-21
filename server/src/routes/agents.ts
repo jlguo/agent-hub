@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../index.js';
+import { getIO } from '../lib/socket.js';
 
 export const router = Router();
 
@@ -88,8 +89,7 @@ router.post('/rooms/:roomId', async (req: Request, res: Response) => {
     });
 
     // Emit WebSocket event
-    const { io } = await import('../index.js');
-    io.to(roomId).emit('agent:created', { agent });
+    getIO().to(roomId).emit('agent:created', { agent });
 
     res.status(201).json(agent);
   } catch (error: any) {
@@ -159,8 +159,7 @@ router.put('/rooms/:roomId/:id', async (req: Request, res: Response) => {
     });
 
     // Emit WebSocket event
-    const { io } = await import('../index.js');
-    io.to(roomId).emit('agent:updated', { agent });
+    getIO().to(roomId).emit('agent:updated', { agent });
 
     res.json(agent);
   } catch (error: any) {
@@ -184,8 +183,7 @@ router.delete('/rooms/:roomId/:id', async (req: Request, res: Response) => {
     });
 
     // Emit WebSocket event
-    const { io } = await import('../index.js');
-    io.to(roomId).emit('agent:deleted', { agentId: id });
+    getIO().to(roomId).emit('agent:deleted', { agentId: id });
 
     res.status(204).send();
   } catch (error: any) {
@@ -235,8 +233,7 @@ router.post('/rooms/:roomId/agents/:agentId/relationships', async (req: Request,
     });
 
     // Emit WebSocket event
-    const { io } = await import('../index.js');
-    io.to(roomId).emit('relationship:created', { relationship });
+    getIO().to(roomId).emit('relationship:created', { relationship });
 
     res.status(201).json(relationship);
   } catch (error: any) {

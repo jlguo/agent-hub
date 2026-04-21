@@ -12,11 +12,14 @@ import webhookRouter from './routes/webhooks.js';
 import openclawGatewayRouter from './routes/openclaw-gateway.js';
 import debugRouter from './routes/debug.js';
 import { initializeIO } from './lib/socket.js';
+import { setupWebSocket } from './websocket/index.js';
 import { feishuOfficial } from './services/FeishuOfficialService.js';
 import { handleFeishuMessage } from './services/MessageService.js';
 import { OpenClawService } from './services/OpenClawService.js';
+import { openClawService } from './services/OpenClawService.js';
 import healthRemoteRouter from './routes/health-remote.js';
 import path from 'path';
+import logger from './config/logger.js';
 
 // Load environment variables
 const initEnv = () => {
@@ -31,9 +34,7 @@ export const prisma = new PrismaClient({
   datasourceUrl: process.env.DATABASE_URL,
 });
 
-// Socket.io instance (set by initializeIO)
-let io: Server;
-export { io };
+// Socket.io instance - use getIO() from lib/socket.ts instead of importing io directly
 
 /**
  * Create Express app with all routes and middleware
@@ -51,9 +52,9 @@ export function createApp(): express.Express {
     import('./middleware/rateLimiter.js')
       .then(({ apiLimiter }) => {
         app.use('/api/', apiLimiter);
-        console.log('🛡️  Rate limiting enabled (100 req/15min)');
+        logger.info('Rate limiting enabled (100 req/15min)');
       })
-      .catch((err) => console.error('Failed to load rate limiter:', err));
+      .catch((err) => logger.error('Failed to load rate limiter:', err));
   }
 
   // Health check endpoint
@@ -66,7 +67,7 @@ export function createApp(): express.Express {
 
     // Add OpenClaw service status
     try {
-      const openClawHealth = await OpenClawService.healthCheck();
+      const openClawHealth = await openClawService.healthCheck();
       healthData.openclaw = openClawHealth;
     } catch (error: any) {
       healthData.openclaw = {
@@ -81,10 +82,10 @@ export function createApp(): express.Express {
   // Remote mode health endpoints
   app.use('/health', healthRemoteRouter);
 
-  // API Routes
+  // API Routes (order matters - most specific first)
   app.use('/api/rooms', roomsRouter);
+  app.use('/api/messages', messagesRouter); // Fixed: mount at /api/messages to avoid conflict
   app.use('/api/agents', agentsRouter);
-  app.use('/api/messages', messagesRouter);
   app.use('/api/webhooks', webhookRouter);
   app.use('/api/openclaw', openclawGatewayRouter);
 
@@ -93,25 +94,25 @@ export function createApp(): express.Express {
     import('./routes/docs.js')
       .then(({ router: docsRouter }) => {
         app.use('/api/docs', docsRouter);
-        console.log('📚 API Documentation: http://localhost:4000/api/docs');
+        logger.info('API Documentation: http://localhost:4000/api/docs');
       })
-      .catch((err) => console.error('Failed to load docs router:', err));
+      .catch((err) => logger.error('Failed to load docs router:', err));
   }
 
   // Debug routes (testing only - not for production)
   if (process.env.NODE_ENV !== 'production') {
     app.use('/api/debug', debugRouter);
-    console.log('🔧 Debug routes enabled (testing only)');
+    logger.info('Debug routes enabled (testing only)');
   }
 
   // Feishu webhook endpoint
   app.post('/api/webhooks/feishu', async (req, res) => {
     try {
-      console.log('[Webhook] Feishu event received:', req.body.type);
+      logger.info('[Webhook] Feishu event received:', req.body.type);
       // Note: handleFeishuMessage requires feishuChatId parameter
       res.status(200).json({ success: true });
     } catch (error: any) {
-      console.error('[Webhook] Error processing Feishu message:', error.message);
+      logger.error('[Webhook] Error processing Feishu message:', error.message);
       res.status(500).json({ error: error.message });
     }
   });
@@ -119,7 +120,7 @@ export function createApp(): express.Express {
   // Frontend proxy (production only)
   if (process.env.NODE_ENV === 'production') {
     const clientPath = path.resolve(process.cwd(), 'client');
-    console.log(`[Server] Serving frontend from ${clientPath}`);
+    logger.info(`[Server] Serving frontend from ${clientPath}`);
     app.use(express.static(clientPath));
 
     app.get('*', (req, res) => {
@@ -132,7 +133,7 @@ export function createApp(): express.Express {
     .then(({ errorHandler }) => {
       app.use(errorHandler);
     })
-    .catch((err) => console.error('Failed to load error handler:', err));
+    .catch((err) => logger.error('Failed to load error handler:', err));
 
   return app;
 }
@@ -147,11 +148,13 @@ export function startServer(
 ): { httpServer: HttpServer; io: Server } {
   const httpServer = createServer(app);
   const socketIO = initializeIO(httpServer);
-  io = socketIO;
+
+  // Setup WebSocket event handlers
+  setupWebSocket(socketIO);
 
   httpServer.listen(port, () => {
-    console.log(`🚀 Backend running on http://localhost:${port}`);
-    console.log(`📡 WebSocket server ready`);
+    logger.info(`Backend running on http://localhost:${port}`);
+    logger.info('WebSocket server ready');
   });
 
   return { httpServer, io: socketIO };
@@ -164,15 +167,15 @@ export function startServer(
 export async function initializeServices(): Promise<void> {
   // Start Session Guardian (it's already a singleton)
   SessionGuardian.start();
-  console.log('✓ Session Guardian started (30s check interval)');
+  logger.info('Session Guardian started (30s check interval)');
 
   // Start Feishu WebSocket (if configured)
   if (process.env.FEISHU_APP_ID && process.env.FEISHU_APP_SECRET) {
-    console.log('📬 Feishu integration configured, connecting...');
+    logger.info('Feishu integration configured, connecting...');
     await feishuOfficial.start();
-    console.log('✓ Feishu WebSocket started');
+    logger.info('Feishu WebSocket started');
   } else {
-    console.log('⚠️  Feishu not configured (missing credentials)');
+    logger.warn('Feishu not configured (missing credentials)');
   }
 }
 
@@ -181,14 +184,14 @@ if (process.env.NODE_ENV !== 'test') {
   const app = createApp();
   const { httpServer } = startServer(app);
 
-  initializeServices().catch(console.error);
+  initializeServices().catch((err) => logger.error('Service initialization error:', err));
 
   // Graceful shutdown
   process.on('SIGTERM', async () => {
-    console.log('SIGTERM received, shutting down gracefully...');
+    logger.info('SIGTERM received, shutting down gracefully...');
     await prisma.$disconnect();
     httpServer.close(() => {
-      console.log('Server closed');
+      logger.info('Server closed');
       process.exit(0);
     });
   });

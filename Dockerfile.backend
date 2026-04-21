@@ -22,7 +22,10 @@ COPY prisma/ ./prisma/
 # Generate Prisma client
 RUN npx prisma generate
 
-# Stage 3: Production image (uses tsx watch for development)
+# Build TypeScript to JavaScript
+RUN npm run build
+
+# Stage 3: Production image
 FROM node:22-alpine AS production
 
 # Install SSH client for tunnel creation + other dependencies
@@ -40,19 +43,21 @@ RUN apk add --no-cache su-exec && \
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodeuser
 
-# Copy ALL dependencies (including dev for tsx)
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/server ./server
+# Install production dependencies only
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+# Copy built output from builder
+COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
 # Create server/prisma directory and copy schema.prisma from build context
 RUN mkdir -p /app/server/prisma
 COPY prisma/schema.prisma ./server/prisma/schema.prisma
 
-# Create prisma directory with correct permissions for volume mount
-# This ensures the directory is writable even when Docker creates a volume
+# Create prisma directory with correct ownership for volume mount
 RUN mkdir -p /app/prisma && \
-    chmod 777 /app/prisma && \
+    chown nodeuser:nodejs /app/prisma && \
     chown -R nodeuser:nodejs /app
 
 # Copy entrypoint script for database initialization
@@ -69,5 +74,5 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:4000/health || exit 1
 
-# Start server with tsx watch (development mode)
-CMD ["npm", "run", "dev"]
+# Start server in production mode
+CMD ["npm", "run", "start"]

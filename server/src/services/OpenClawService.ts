@@ -9,6 +9,8 @@
  *   const testService = createOpenClawService({ mode: 'cli' }); // Test instance
  */
 
+import logger from '../config/logger.js';
+
 export interface OpenClawConfig {
   mode?: 'http' | 'cli' | 'remote';
   gatewayUrl?: string;
@@ -22,6 +24,7 @@ export interface OpenClawHealthResult {
   tunnel?: 'connected' | 'disconnected';
   feishu?: 'ok' | 'error';
   agents?: string[];
+  note?: string;
 }
 
 export interface OpenClawSendResult {
@@ -40,17 +43,17 @@ export class OpenClawService {
     this.gatewayUrl = config.gatewayUrl || process.env.OPENCLAW_GATEWAY_URL;
     this.verificationToken = config.verificationToken || process.env.OPENCLAW_VERIFICATION_TOKEN;
 
-    console.log(`[OpenClawService] Mode: ${this.mode.toUpperCase()}`);
+    logger.info(`[OpenClawService] Mode: ${this.mode.toUpperCase()}`);
 
     if (this.mode === 'remote') {
-      console.log(`[OpenClawService] Remote mode configured`);
-      console.log(
+      logger.info(`[OpenClawService] Remote mode configured`);
+      logger.info(
         `[OpenClawService] Gateway URL: ${this.gatewayUrl || 'ws://127.0.0.1:18789 (default)'}`
       );
-      console.log(
+      logger.info(
         `[OpenClawService] Note: Remote mode uses OpenClaw CLI with gateway.remote.* config`
       );
-      console.log(
+      logger.info(
         `[OpenClawService] Ensure SSH tunnel is running: ssh -N -L 18789:127.0.0.1:18789 user@remote-host`
       );
     }
@@ -65,9 +68,9 @@ export class OpenClawService {
     agentId: string,
     sessionId: string
   ): Promise<OpenClawSendResult> {
-    console.log(`[OpenClawService] Sending message via ${this.mode.toUpperCase()} mode`);
-    console.log(`[OpenClawService] Agent: ${agentId}, Session: ${sessionId}`);
-    console.log(`[OpenClawService] Message: ${message.substring(0, 50)}...`);
+    logger.info(`[OpenClawService] Sending message via ${this.mode.toUpperCase()} mode`);
+    logger.info(`[OpenClawService] Agent: ${agentId}, Session: ${sessionId}`);
+    logger.info(`[OpenClawService] Message: ${message.substring(0, 50)}...`);
 
     try {
       if (this.mode === 'cli' || this.mode === 'remote') {
@@ -79,7 +82,7 @@ export class OpenClawService {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`[OpenClawService] Error: ${errorMessage}`);
+      logger.error(`[OpenClawService] Error: ${errorMessage}`);
       return {
         success: false,
         error: errorMessage,
@@ -95,7 +98,7 @@ export class OpenClawService {
     const { executeCommand } = await import('../utils/exec.js');
     const command = `openclaw agent --message "${message}" --agent "${agentId}" --session-id "${sessionId}"`;
 
-    console.log(`[OpenClawService] Executing: ${command}`);
+    logger.info(`[OpenClawService] Executing: ${command}`);
 
     try {
       const { stdout } = await executeCommand(command, { timeout: 30000 });
@@ -117,13 +120,13 @@ export class OpenClawService {
 
       // Graceful degradation for test environments
       if (errorMessage.includes('ENOENT') || errorMessage.includes('not found')) {
-        console.log('[OpenClawService] CLI not installed, returning mock response for testing');
+        logger.info('[OpenClawService] CLI not installed, returning mock response for testing');
         return {
           success: true,
           response: `[Mock] Message sent via CLI (test environment)`,
         };
       } else if (errorMessage.includes('timeout')) {
-        console.log('[OpenClawService] CLI timeout, returning mock response for testing');
+        logger.info('[OpenClawService] CLI timeout, returning mock response for testing');
         return {
           success: true,
           response: `[Mock] Message sent via CLI timeout (test environment)`,
@@ -166,7 +169,7 @@ export class OpenClawService {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const result = await response.json();
+      const result = (await response.json()) as any;
       return {
         success: true,
         response: result.response || result.output,
@@ -181,7 +184,7 @@ export class OpenClawService {
   }
 
   async healthCheck(): Promise<OpenClawHealthResult> {
-    console.log(`[OpenClawService] Health check - Mode: ${this.mode}`);
+    logger.info(`[OpenClawService] Health check - Mode: ${this.mode}`);
 
     const result: OpenClawHealthResult = {
       mode: this.mode,
@@ -228,13 +231,13 @@ export class OpenClawService {
 
           // Graceful degradation: CLI not installed is OK for testing
           if (errorMessage.includes('ENOENT') || errorMessage.includes('not found')) {
-            console.log('[OpenClawService] CLI not installed, marking as healthy for testing');
+            logger.info('[OpenClawService] CLI not installed, marking as healthy for testing');
             result.healthy = true;
-            result.note = 'CLI not installed (test environment)';
+            (result as any).note = 'CLI not installed (test environment)';
           } else if (errorMessage.includes('timeout')) {
-            console.log('[OpenClawService] CLI timeout, marking as healthy for testing');
+            logger.info('[OpenClawService] CLI timeout, marking as healthy for testing');
             result.healthy = true;
-            result.note = 'CLI timeout (test environment)';
+            (result as any).note = 'CLI timeout (test environment)';
           } else {
             result.healthy = false;
             result.error = errorMessage;
@@ -268,7 +271,7 @@ export class OpenClawService {
       result.error = error instanceof Error ? error.message : 'Unknown error';
     }
 
-    console.log(`[OpenClawService] Health check result:`, result);
+    logger.info(`[OpenClawService] Health check result:`, result);
     return result;
   }
 }

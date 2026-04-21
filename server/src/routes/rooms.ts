@@ -149,7 +149,8 @@ router.post('/:id/topic', async (req: Request, res: Response) => {
     });
 
     // Emit WebSocket event
-    const { io } = await import('../index.js');
+    const { getIO } = await import('../lib/socket.js');
+    const io = getIO();
     io.to(id).emit('discussion:started', { discussion });
 
     res.status(201).json(discussion);

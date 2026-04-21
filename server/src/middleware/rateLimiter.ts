@@ -14,11 +14,9 @@ import { Request, Response } from 'express';
  * Environment Variables:
  * - RATE_LIMIT_WINDOW_MS: Time window in milliseconds (default: 900000 = 15 min)
  * - RATE_LIMIT_MAX_REQUESTS: Max requests per window (default: 100)
- * - RATE_LIMIT_TRUST_PROXY: Trust reverse proxies (default: true)
  */
 const WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10);
 const MAX_REQUESTS = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10);
-const TRUST_PROXY = process.env.RATE_LIMIT_TRUST_PROXY !== 'false';
 
 /**
  * General API rate limiter
@@ -31,7 +29,6 @@ export const apiLimiter = rateLimit({
   max: MAX_REQUESTS,
   standardHeaders: true, // Return rate limit info in headers
   legacyHeaders: false, // Disable X-RateLimit-* headers
-  trustProxy: TRUST_PROXY,
   skipSuccessfulRequests: false,
   skipFailedRequests: false,
 
@@ -49,8 +46,9 @@ export const apiLimiter = rateLimit({
     const userId = (req as any).user?.id;
     if (userId) return `user:${userId}`;
 
-    // Fall back to IP address
-    return req.ip || 'unknown';
+    // Fall back to IP address - use socket remote address
+    const ip = req.socket.remoteAddress || 'unknown';
+    return ip;
   },
 
   // Request handler when limit is exceeded
@@ -83,7 +81,6 @@ export const apiLimiter = rateLimit({
 export const strictLimiter = rateLimit({
   windowMs: WINDOW_MS,
   max: parseInt(process.env.RATE_LIMIT_STRICT_MAX || '10', 10),
-  trustProxy: TRUST_PROXY,
   message: {
     error: {
       code: 'RATE_LIMIT_EXCEEDED',
@@ -102,7 +99,6 @@ export const strictLimiter = rateLimit({
 export const readLimiter = rateLimit({
   windowMs: WINDOW_MS,
   max: parseInt(process.env.RATE_LIMIT_READ_MAX || '200', 10),
-  trustProxy: TRUST_PROXY,
   skipSuccessfulRequests: true, // Only count failed requests
   message: {
     error: {
@@ -119,6 +115,5 @@ export const readLimiter = rateLimit({
 export const noLimiter = rateLimit({
   windowMs: WINDOW_MS,
   max: 999999,
-  trustProxy: TRUST_PROXY,
   skip: () => true,
 });

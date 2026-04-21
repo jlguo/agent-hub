@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { OpenClawService } from '../services/OpenClawService';
+import { openClawService } from '../services/OpenClawService.js';
 
 const router = Router();
 
@@ -14,13 +14,13 @@ router.get('/remote', async (_req: Request, res: Response) => {
 
   try {
     // Run OpenClaw health check
-    const openClawHealth = await OpenClawService.healthCheck();
+    const openClawHealth = await openClawService.healthCheck();
 
     const healthDuration = Date.now() - startTime;
 
     // Build comprehensive health response
     const healthData = {
-      status: openClawHealth.status === 'healthy' ? 'ok' : 'degraded',
+      status: openClawHealth.healthy ? 'ok' : 'degraded',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       checks: {
@@ -40,7 +40,7 @@ router.get('/remote', async (_req: Request, res: Response) => {
     };
 
     // Return appropriate status code
-    if (openClawHealth.status === 'healthy') {
+    if (openClawHealth.healthy) {
       res.status(200).json(healthData);
     } else {
       res.status(503).json({

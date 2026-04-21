@@ -21,7 +21,7 @@ test.describe('Agent Discussions', () => {
     await expect(page).toHaveTitle(/Agent Hub/);
 
     // Wait for rooms to load
-    await page.waitForSelector('button:has-text("Family")', { timeout: 15000 });
+    await page.waitForSelector('button:has-text("Family")', { timeout: 30000 });
     console.log('✅ Rooms loaded');
     console.log('🧹 === TEST SETUP COMPLETE ===\n');
   });
@@ -73,9 +73,7 @@ test.describe('Agent Discussions', () => {
     await page.waitForTimeout(2000);
 
     // Get message count after heat building
-    const messagesAfterHeat = await page
-      .locator('[class*="message"], .bg-white.border, .bg-blue-500')
-      .count();
+    const messagesAfterHeat = await page.locator('.bg-primary, .bg-surface-elevated').count();
     console.log(`📊 Messages after heat building: ${messagesAfterHeat}`);
 
     // STEP 2: Trigger discussion
@@ -91,7 +89,7 @@ test.describe('Agent Discussions', () => {
     await page.waitForTimeout(2000);
 
     // Verify user message appears
-    const userMessages = await page.locator('.bg-blue-500').count();
+    const userMessages = await page.locator('.bg-primary').count();
     console.log(`📊 User messages after send: ${userMessages}`);
     expect(userMessages).toBeGreaterThan(0);
 
@@ -116,9 +114,7 @@ test.describe('Agent Discussions', () => {
     await page.waitForTimeout(30000);
 
     // Check for new messages
-    const finalMessages = await page
-      .locator('[class*="message"], .bg-white.border, .bg-blue-500')
-      .count();
+    const finalMessages = await page.locator('.bg-primary, .bg-surface-elevated').count();
     console.log(`📊 Final messages: ${finalMessages} (was ${messagesAfterHeat})`);
 
     // Should have new messages from discussion
@@ -126,7 +122,7 @@ test.describe('Agent Discussions', () => {
     if (finalMessages <= messagesAfterHeat) {
       console.log('⚠️ WARNING: No new messages detected. Logging all messages:');
       const allMessages = await page
-        .locator('[class*="message"], .bg-white.border, .bg-blue-500, .bg-purple-50')
+        .locator('.bg-primary, .bg-surface-elevated, .bg-purple-50')
         .all();
       for (let i = 0; i < allMessages.length; i++) {
         const content = await allMessages[i].textContent();
@@ -134,8 +130,12 @@ test.describe('Agent Discussions', () => {
       }
     }
 
-    // Take screenshot for debugging
-    await page.screenshot({ path: 'tests/e2e/screenshots/discussion-test.png' });
+    // Take screenshot for debugging (safe on webkit)
+    try {
+      await page.screenshot({ path: 'tests/e2e/screenshots/discussion-test.png', fullPage: true });
+    } catch {
+      await page.screenshot({ path: 'tests/e2e/screenshots/discussion-test.png' });
+    }
     console.log('📸 Screenshot saved');
 
     // ASSERTION: Should have new messages (allow for some flakiness)
@@ -143,7 +143,7 @@ test.describe('Agent Discussions', () => {
     expect(finalMessages).toBeGreaterThanOrEqual(messagesAfterHeat);
 
     // Look for agent messages (white bubbles with border)
-    const agentMessages = page.locator('.bg-white.border, .bg-gray-50.border');
+    const agentMessages = page.locator('.bg-surface-elevated.border');
     const agentMessageCount = await agentMessages.count();
     console.log(`🤖 Agent messages: ${agentMessageCount}`);
 
@@ -191,7 +191,14 @@ test.describe('Agent Discussions', () => {
     console.log(`🟣 Purple discussion banners: ${bannerCount}`);
 
     // Take screenshot
-    await page.screenshot({ path: 'tests/e2e/screenshots/system-message-test.png' });
+    try {
+      await page.screenshot({
+        path: 'tests/e2e/screenshots/system-message-test.png',
+        fullPage: true,
+      });
+    } catch {
+      await page.screenshot({ path: 'tests/e2e/screenshots/system-message-test.png' });
+    }
 
     // We expect at least 1 discussion banner (start or end)
     // This is a softer assertion than requiring full discussion

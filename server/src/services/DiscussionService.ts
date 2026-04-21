@@ -1,6 +1,6 @@
-import { prisma } from '../lib/prisma.js';
+import { prisma } from '../index.js';
 import { getIO } from '../lib/socket.js';
-import { OpenClawService, AgentContext } from './OpenClawService.js';
+import { OpenClawService, openClawService } from './OpenClawService.js';
 import { Agent, Relationship } from '@prisma/client';
 
 /**
@@ -202,15 +202,16 @@ export async function triggerAgentDiscussion(
       };
 
       // Get AI response
-      const response = await OpenClawService.sendMessage(
-        discussionPrompt,
-        currentSpeaker.id,
-        roomId,
-        agentContext,
-        false, // Don't deliver to Feishu yet
-        undefined,
-        undefined
-      );
+      const result = await openClawService.sendMessage(discussionPrompt, currentSpeaker.id, roomId);
+
+      if (!result.success || !result.response) {
+        console.error(
+          `[DiscussionService] Agent ${currentSpeaker.name} failed: ${result.error || 'empty response'}`
+        );
+        continue;
+      }
+
+      const responseContent = result.response;
 
       // Save to database (metadata must be stringified JSON)
       const discussionMessage = await prisma.message.create({
@@ -218,7 +219,7 @@ export async function triggerAgentDiscussion(
           roomId,
           agentId: currentSpeaker.id,
           senderType: 'agent',
-          content: response.content,
+          content: responseContent,
           metadata: JSON.stringify({
             isDiscussion: true,
             topic: topic,
@@ -252,7 +253,7 @@ export async function triggerAgentDiscussion(
         `[DiscussionService] Turn ${turn + 1}/${numTurns}: ${currentSpeaker.name} responded`
       );
 
-      previousMessage = response.content;
+      previousMessage = responseContent;
       previousSpeaker = currentSpeaker.name;
     }
 

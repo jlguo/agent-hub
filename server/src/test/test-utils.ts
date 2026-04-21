@@ -168,8 +168,6 @@ export function createTestRoomData(
     description: null,
     context: null,
     externalChatId: null,
-    openclawSessionId: null,
-    sessionMaxAge: 3600,
     ...overrides,
   };
 }

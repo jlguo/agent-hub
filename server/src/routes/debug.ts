@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { prisma } from '../lib/prisma.js';
+import { prisma } from '../index.js';
 import { getIO } from '../websocket/index.js';
 
 const router = Router();

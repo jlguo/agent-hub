@@ -1,4 +1,4 @@
-import { prisma } from '../lib/prisma.js';
+import { prisma } from '../index.js';
 import { getIO } from '../lib/socket.js';
 import { openClawService } from './OpenClawService.js';
 import { Agent, Relationship } from '@prisma/client';
@@ -7,6 +7,8 @@ import {
   getResponseProbability,
   calculateHeatIncrement,
 } from '../config/heat.config.js';
+import logger from '../config/logger.js';
+import { mentionConfig, messageQueryConfig, agentResponseConfig } from '../config/app.config.js';
 
 /**
  * Extended Agent type with relationships included
@@ -21,7 +23,29 @@ type AgentWithRelationships = Agent & {
  * Prevents spamming same agent with @mentions
  */
 const MENTION_COOLDOWNS: Map<string, number> = new Map(); // agentId -> timestamp
-const COOLDOWN_MS = 60000; // 60 seconds cooldown
+// COOLDOWN_MS now comes from mentionConfig.cooldownMs
+
+// Periodic cleanup timer for expired cooldowns (avoids unbounded Map growth)
+let cooldownCleanupTimer: NodeJS.Timeout | null = null;
+
+function startCooldownCleanup() {
+  if (cooldownCleanupTimer) return; // Already running
+  cooldownCleanupTimer = setInterval(() => {
+    const now = Date.now();
+    for (const [id, timestamp] of MENTION_COOLDOWNS.entries()) {
+      if (now - timestamp > mentionConfig.cooldownMs * 2) {
+        MENTION_COOLDOWNS.delete(id);
+      }
+    }
+  }, mentionConfig.cleanupIntervalMs);
+  // Don't prevent Node.js process from exiting
+  if (cooldownCleanupTimer.unref) {
+    cooldownCleanupTimer.unref();
+  }
+}
+
+// Start cleanup on module load
+startCooldownCleanup();
 
 /**
  * Parse @mentions from message and return mentioned agent IDs
@@ -42,7 +66,7 @@ function isOnCooldown(agentId: string): boolean {
   const now = Date.now();
   const elapsed = now - lastMention;
 
-  if (elapsed > COOLDOWN_MS) {
+  if (elapsed > mentionConfig.cooldownMs) {
     MENTION_COOLDOWNS.delete(agentId); // Cooldown expired
     return false;
   }
@@ -55,16 +79,6 @@ function isOnCooldown(agentId: string): boolean {
  */
 function setCooldown(agentId: string) {
   MENTION_COOLDOWNS.set(agentId, Date.now());
-
-  // Cleanup old cooldowns periodically
-  if (MENTION_COOLDOWNS.size > 20) {
-    const now = Date.now();
-    for (const [id, timestamp] of MENTION_COOLDOWNS.entries()) {
-      if (now - timestamp > COOLDOWN_MS * 2) {
-        MENTION_COOLDOWNS.delete(id);
-      }
-    }
-  }
 }
 
 /**
@@ -129,11 +143,11 @@ function selectAgentsWithMention(
           selectedAgents.push({ ...matchedAgent, selectedByMention: true });
           setCooldown(matchedAgent.id); // Set cooldown after selection
         } else {
-          console.log(`[MessageService] Agent ${matchedAgent.name} on cooldown, skipping`);
+          logger.info(`[MessageService] Agent ${matchedAgent.name} on cooldown, skipping`);
         }
       } else {
         // Smart fallback for unknown @mentions
-        console.log(`[MessageService] Unknown @mention: @${mention}, using smart fallback`);
+        logger.info(`[MessageService] Unknown @mention: @${mention}, using smart fallback`);
         // Will add fallback message later
         selectedAgents.push({
           ...agents[Math.floor(Math.random() * agents.length)],
@@ -176,7 +190,7 @@ export async function triggerAgentResponse(
   replyTo?: string
 ) {
   try {
-    console.log(`[MessageService] Triggering agent response for room ${roomId}`);
+    logger.info(`[MessageService] Triggering agent response for room ${roomId}`);
 
     // 1. Get all agents in room
     const agents = (await prisma.agent.findMany({
@@ -188,16 +202,35 @@ export async function triggerAgentResponse(
     })) as AgentWithRelationships[];
 
     if (agents.length === 0) {
-      console.warn(`[MessageService] No agents found in room ${roomId}`);
+      logger.warn(`[MessageService] No agents found in room ${roomId}`);
       return;
     }
 
     // 2. Select responding agent(s) with @mention targeting, cooldown, and smart fallback
     const respondingAgents = selectAgentsWithMention(userMessage, agents);
-    console.log(
+    logger.info(
       `[MessageService] Selected ${respondingAgents.length} agent(s):`,
       respondingAgents.map((a) => `${a.name}${a.isFallback ? ' (fallback)' : ''}`).join(', ')
     );
+
+    // Fetch recent messages ONCE before the loop (fixes N+1 query)
+    const recentMessages = await prisma.message.findMany({
+      where: { roomId },
+      orderBy: { createdAt: 'desc' },
+      take: messageQueryConfig.recentMessageLimit,
+      include: {
+        agent: {
+          select: { name: true, avatar: true },
+        },
+      },
+    });
+
+    // Format messages for agent context (newest first, then reverse for chronological)
+    const formattedHistory = recentMessages.reverse().map((msg) => ({
+      role: msg.senderType === 'human' ? 'user' : 'assistant',
+      content: msg.content,
+      timestamp: msg.createdAt.toISOString(),
+    }));
 
     // 3. Trigger responses from all selected agents (with delays for natural flow)
     for (let i = 0; i < respondingAgents.length; i++) {
@@ -205,8 +238,10 @@ export async function triggerAgentResponse(
 
       // Add delay between multiple agents (2-3 seconds for natural conversation)
       if (i > 0) {
-        const delay = 2000 + Math.random() * 1000; // 2-3 seconds
-        console.log(
+        const delay =
+          agentResponseConfig.responseDelayMinMs +
+          Math.random() * agentResponseConfig.responseDelayMaxMs; // 2-3 seconds
+        logger.info(
           `[MessageService] Waiting ${Math.round(delay)}ms before ${respondingAgent.name} responds...`
         );
         await new Promise((resolve) => setTimeout(resolve, delay));
@@ -218,25 +253,6 @@ export async function triggerAgentResponse(
           ...(respondingAgent.relationshipsAsA || []),
           ...(respondingAgent.relationshipsAsB || []),
         ];
-
-        // Load recent messages from the same discussion (last 20 messages)
-        const recentMessages = await prisma.message.findMany({
-          where: { roomId },
-          orderBy: { createdAt: 'desc' },
-          take: 20,
-          include: {
-            agent: {
-              select: { name: true, avatar: true },
-            },
-          },
-        });
-
-        // Format messages for agent context (newest first, then reverse for chronological)
-        const formattedHistory = recentMessages.reverse().map((msg) => ({
-          role: msg.senderType === 'human' ? 'user' : 'assistant',
-          content: msg.content,
-          timestamp: msg.createdAt.toISOString(),
-        }));
 
         // Smart fallback: modify userMessage for unknown @mention
         const finalMessage = respondingAgent.isFallback
@@ -256,7 +272,7 @@ export async function triggerAgentResponse(
           );
 
           if (result.success && result.response) {
-            console.log(
+            logger.info(
               `[MessageService] AI response received from ${respondingAgent.name} (${result.response.length} chars)`
             );
             response = { content: result.response };
@@ -265,11 +281,11 @@ export async function triggerAgentResponse(
           }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          console.error('[MessageService] ❌ Critical error in agent response:', errorMessage);
+          logger.error('[MessageService] Critical error in agent response:', errorMessage);
 
           // Use fallback response to maintain user experience
           response = {
-            content: generateSmartFallback(finalMessage, respondingAgent),
+            content: generateSmartFallback(userMessage, respondingAgent),
           };
         }
 
@@ -288,24 +304,22 @@ export async function triggerAgentResponse(
           },
         });
 
-        console.log(`[MessageService] ✅ Agent message saved: ${agentMessage.id}`);
-        console.log(
-          `[MessageService] 📡 About to emit agent response to WebSocket, roomId: ${roomId}`
+        logger.info(`[MessageService] Agent message saved: ${agentMessage.id}`);
+        logger.info(
+          `[MessageService] About to emit agent response to WebSocket, roomId: ${roomId}`
         );
 
         // Emit WebSocket event to frontend
         const io = getIO();
-        console.log(
-          `[MessageService] 📡 Got IO instance, emitting agent response to room: ${roomId}`
-        );
+        logger.info(`[MessageService] Got IO instance, emitting agent response to room: ${roomId}`);
         io.to(roomId).emit('message:new', {
           ...agentMessage,
           agentName: agentMessage.agent?.name || respondingAgent.name,
           agentAvatar: agentMessage.agent?.avatar || undefined,
         });
 
-        console.log(
-          `[MessageService] ✅ ${respondingAgent.name} responded successfully${respondingAgent.isFallback ? ' (smart fallback)' : ''}`
+        logger.info(
+          `[MessageService] ${respondingAgent.name} responded successfully${respondingAgent.isFallback ? ' (smart fallback)' : ''}`
         );
 
         // Check if this agent message contains @mentions that should trigger responses from OTHER agents
@@ -327,14 +341,14 @@ export async function triggerAgentResponse(
             });
 
             if (mentionedAgentsToRespond.length > 0) {
-              console.log(
-                `[MessageService] 🎯 Agent ${respondingAgent.name} mentioned: ${mentionedAgentsToRespond.map((a) => a.name).join(', ')}`
+              logger.info(
+                `[MessageService] Agent ${respondingAgent.name} mentioned: ${mentionedAgentsToRespond.map((a) => a.name).join(', ')}`
               );
               // Trigger responses from mentioned agents (with 2-3s delay for natural flow)
               for (const mentionedAgent of mentionedAgentsToRespond) {
                 // Check cooldown
                 if (isOnCooldown(mentionedAgent.id)) {
-                  console.log(`[MessageService] ⏱️ ${mentionedAgent.name} on cooldown, skipping`);
+                  logger.info(`[MessageService] ${mentionedAgent.name} on cooldown, skipping`);
                   continue;
                 }
                 setCooldown(mentionedAgent.id);
@@ -346,7 +360,7 @@ export async function triggerAgentResponse(
                       const recentMessages = await prisma.message.findMany({
                         where: { roomId },
                         orderBy: { createdAt: 'desc' },
-                        take: 15,
+                        take: messageQueryConfig.followupMessageLimit,
                         include: { agent: { select: { name: true } } },
                       });
 
@@ -374,7 +388,7 @@ export async function triggerAgentResponse(
                         );
 
                         if (result.success && result.response) {
-                          console.log(
+                          logger.info(
                             `[MessageService] AI response from ${mentionedAgent.name} (${result.response.length} chars)`
                           );
                           response = { content: result.response };
@@ -384,8 +398,8 @@ export async function triggerAgentResponse(
                       } catch (error) {
                         const errorMessage =
                           error instanceof Error ? error.message : 'Unknown error';
-                        console.error(
-                          `[MessageService] ❌ Error in ${mentionedAgent.name} @mention response:`,
+                        logger.error(
+                          `[MessageService] Error in ${mentionedAgent.name} @mention response:`,
                           errorMessage
                         );
                         // Skip this agent's response but continue with others
@@ -413,35 +427,36 @@ export async function triggerAgentResponse(
                       };
                       io.to(roomId).emit('message:new', emitData);
 
-                      console.log(
-                        `[MessageService] ✅ ${mentionedAgent.name} responded to @mention from ${respondingAgent.name}`
+                      logger.info(
+                        `[MessageService] ${mentionedAgent.name} responded to @mention from ${respondingAgent.name}`
                       );
-                      console.log(
-                        `[MessageService] 📡 WebSocket emit to room ${roomId}: ${emitData.content.substring(0, 50)}...`
+                      logger.info(
+                        `[MessageService] WebSocket emit to room ${roomId}: ${emitData.content.substring(0, 50)}...`
                       );
                     } catch (error: any) {
-                      console.error(
-                        `[MessageService] ❌ Error with ${mentionedAgent.name} followup:`,
+                      logger.error(
+                        `[MessageService] Error with ${mentionedAgent.name} followup:`,
                         error.message
                       );
                     }
                   },
-                  2000 + Math.random() * 1000
+                  agentResponseConfig.responseDelayMinMs +
+                    Math.random() * agentResponseConfig.responseDelayMaxMs
                 );
               }
             }
           }
         }
       } catch (error: any) {
-        console.error(
-          `[MessageService] ❌ Error with ${respondingAgent.name} response:`,
+        logger.error(
+          `[MessageService] Error with ${respondingAgent.name} response:`,
           error.message
         );
         // Continue with next agent even if one fails
       }
     }
   } catch (error: any) {
-    console.error('[MessageService] ❌ Error triggering agent response:', error.message);
+    logger.error('[MessageService] Error triggering agent response:', error.message);
     // Don't rethrow - agent response is best-effort
   }
 }
@@ -461,7 +476,7 @@ export async function handleFeishuMessage(
   sendToFeishu: (chatId: string, content: string) => Promise<void>
 ) {
   try {
-    console.log('[MessageService] 📨 Handling Feishu message:', normalizedMessage.content);
+    logger.info('[MessageService] Handling Feishu message:', normalizedMessage.content);
 
     // Save message to database
     const message = await prisma.message.create({
@@ -476,15 +491,12 @@ export async function handleFeishuMessage(
       },
     });
 
-    console.log('[MessageService] ✅ Feishu message saved:', message.id);
-    console.log(
-      '[MessageService] 📡 About to emit to WebSocket, roomId:',
-      normalizedMessage.roomId
-    );
+    logger.info('[MessageService] Feishu message saved:', message.id);
+    logger.info('[MessageService] About to emit to WebSocket, roomId:', normalizedMessage.roomId);
 
     // Emit to WebSocket (for Web UI clients)
     const io = getIO();
-    console.log('[MessageService] 📡 Got IO instance, emitting to room:', normalizedMessage.roomId);
+    logger.info('[MessageService] Got IO instance, emitting to room:', normalizedMessage.roomId);
     io.to(normalizedMessage.roomId).emit('message:new', {
       ...message,
       agentName: message.agent?.name || undefined,
@@ -493,7 +505,7 @@ export async function handleFeishuMessage(
 
     // If human message, check for discussion trigger or normal agent response
     if (normalizedMessage.senderType === 'human') {
-      console.log('[MessageService] 🔥 Triggering agent response for Feishu message');
+      logger.info('[MessageService] Triggering agent response for Feishu message');
 
       // Get room for context
       const room = await prisma.room.findUnique({
@@ -509,7 +521,7 @@ export async function handleFeishuMessage(
       });
 
       if (!room) {
-        console.error('[MessageService] Room not found:', normalizedMessage.roomId);
+        logger.error('[MessageService] Room not found:', normalizedMessage.roomId);
         return;
       }
 
@@ -521,7 +533,7 @@ export async function handleFeishuMessage(
 
       if (discussionTopic) {
         // Trigger autonomous agent discussion
-        console.log(`[MessageService] Discussion triggered from Feishu: "${discussionTopic}"`);
+        logger.info(`[MessageService] Discussion triggered from Feishu: "${discussionTopic}"`);
         import('./DiscussionService.js').then(({ triggerAgentDiscussion }) => {
           triggerAgentDiscussion(
             normalizedMessage.roomId,
@@ -529,7 +541,9 @@ export async function handleFeishuMessage(
             undefined,
             sendToFeishu,
             feishuChatId
-          ).catch(console.error);
+          ).catch((err: any) => {
+            logger.error('[MessageService] Discussion error:', err);
+          });
         });
       } else {
         // Normal agent response with callback to send back to Feishu
@@ -547,13 +561,13 @@ export async function handleFeishuMessage(
 
             // Send to Feishu
             await sendToFeishu(feishuChatId, formattedContent);
-            console.log('[MessageService] ✅ Agent response sent to Feishu');
+            logger.info('[MessageService] Agent response sent to Feishu');
           }
         );
       }
     }
   } catch (error: any) {
-    console.error('[MessageService] ❌ Error handling Feishu message:', error.message);
+    logger.error('[MessageService] Error handling Feishu message:', error.message);
   }
 }
 
@@ -594,7 +608,7 @@ async function triggerAgentResponseWithCallback(
 
         if (mentionedAgent) {
           if (isOnCooldown(mentionedAgent.id)) {
-            console.log(`[MessageService] Agent ${mentionedAgent.name} on cooldown, skipping`);
+            logger.info(`[MessageService] Agent ${mentionedAgent.name} on cooldown, skipping`);
             continue;
           }
           selectedAgents.push(mentionedAgent);
@@ -608,10 +622,10 @@ async function triggerAgentResponseWithCallback(
       // Use default 60% probability (WARM zone)
       // TODO: Integrate with HeatTracker for dynamic probability based on discussion heat
       const responseChance = Math.random();
-      const shouldRespond = responseChance < 0.6; // 60% base chance
+      const shouldRespond = responseChance < agentResponseConfig.baseResponseProbability; // 60% base chance
 
       if (!shouldRespond) {
-        console.log('[MessageService] Random check failed, skipping response');
+        logger.info('[MessageService] Random check failed, skipping response');
         return;
       }
 
@@ -643,7 +657,7 @@ async function triggerAgentResponseWithCallback(
           }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          console.error('[MessageService] ❌ Error in agent response:', errorMessage);
+          logger.error('[MessageService] Error in agent response:', errorMessage);
           // Skip this agent but continue with others
           continue;
         }
@@ -661,30 +675,104 @@ async function triggerAgentResponseWithCallback(
           },
         });
 
-        console.log(`[MessageService] ✅ Agent message saved: ${agentMessage.id}`);
-        console.log(
-          `[MessageService] 📡 About to emit agent response to WebSocket, roomId: ${roomId}`
+        logger.info(`[MessageService] Agent message saved: ${agentMessage.id}`);
+        logger.info(
+          `[MessageService] About to emit agent response to WebSocket, roomId: ${roomId}`
         );
 
         // Emit WebSocket event to frontend (Web UI)
         const io = getIO();
-        console.log(
-          `[MessageService] 📡 Got IO instance, emitting agent response to room: ${roomId}`
-        );
+        logger.info(`[MessageService] Got IO instance, emitting agent response to room: ${roomId}`);
         io.to(roomId).emit('message:new', {
           ...agentMessage,
           agentName: agentMessage.agent?.name || agent.name,
           agentAvatar: agentMessage.agent?.avatar || undefined,
         });
-        console.log(`[MessageService] ✅ WebSocket emit complete for agent response`);
+        logger.info('[MessageService] WebSocket emit complete for agent response');
 
         // Call the delivery callback (Feishu)
         await onAgentResponse(agentMessage);
       } catch (error: any) {
-        console.error(`[MessageService] Error with ${agent.name} response:`, error.message);
+        logger.error(`[MessageService] Error with ${agent.name} response:`, error.message);
       }
     }
   } catch (error: any) {
-    console.error('[MessageService] Error in triggerAgentResponseWithCallback:', error.message);
+    logger.error('[MessageService] Error in triggerAgentResponseWithCallback:', error.message);
   }
+}
+
+/**
+ * Sync message to Feishu if room has external chat ID
+ * Extracted from messages route for separation of concerns
+ */
+export async function handleFeishuSync(
+  roomId: string,
+  content: string,
+  senderType: string
+): Promise<void> {
+  if (senderType !== 'human') return;
+
+  const room = await prisma.room.findUnique({
+    where: { id: roomId },
+    select: { externalChatId: true },
+  });
+
+  if (!room?.externalChatId || room.externalChatId === 'N/A') return;
+
+  try {
+    const { FeishuService } = await import('./FeishuService.js');
+    const feishuService = new FeishuService();
+    await feishuService.sendMessage(room.externalChatId, content);
+    logger.info('[MessageService] Web UI message synced to Feishu');
+  } catch (err: any) {
+    logger.error('[MessageService] Feishu sync failed:', err.message);
+  }
+}
+
+/**
+ * Detect discussion trigger and initiate discussion if matched
+ * Extracted from messages route for separation of concerns
+ *
+ * @returns The discussion topic if triggered, null otherwise
+ */
+export async function handleDiscussionTrigger(
+  roomId: string,
+  content: string,
+  roomDescription?: string
+): Promise<string | null> {
+  const discussionTopic =
+    content.match(/^\/discuss\s+(.+)/i)?.[1]?.trim() ||
+    content.match(/^let's discuss\s+(.+)/i)?.[1]?.trim() ||
+    content.match(/^咱们讨论一下\s*(.+)/i)?.[1]?.trim();
+
+  if (!discussionTopic) return null;
+
+  logger.info(`[MessageService] Discussion triggered: "${discussionTopic}"`);
+
+  // Get room to check if Feishu sync is needed
+  const roomWithChatId = await prisma.room.findUnique({
+    where: { id: roomId },
+    select: { externalChatId: true },
+  });
+
+  // Send to Feishu if room has externalChatId
+  const sendToFeishu =
+    roomWithChatId?.externalChatId && roomWithChatId.externalChatId !== 'N/A'
+      ? async (chatId: string, content: string) => {
+          const { FeishuService } = await import('./FeishuService.js');
+          const feishuService = new FeishuService();
+          await feishuService.sendMessage(chatId, content);
+        }
+      : undefined;
+
+  const { triggerAgentDiscussion } = await import('./DiscussionService.js');
+  triggerAgentDiscussion(
+    roomId,
+    discussionTopic,
+    undefined,
+    sendToFeishu,
+    roomWithChatId?.externalChatId || undefined
+  ).catch((err) => logger.error('[MessageService] Discussion error:', err));
+
+  return discussionTopic;
 }

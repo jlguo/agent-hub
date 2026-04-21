@@ -49,7 +49,6 @@ const options = {
             context: { type: 'string', nullable: true },
             settings: { type: 'object', nullable: true },
             externalChatId: { type: 'string', nullable: true },
-            sessionMaxAge: { type: 'integer', default: 3600 },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
           },

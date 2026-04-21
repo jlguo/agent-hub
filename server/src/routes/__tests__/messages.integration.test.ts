@@ -16,6 +16,18 @@ import { createTestAgentData, createTestRoomData } from '../../test/test-utils';
 import { createApp } from '../../index';
 import { Server } from 'http';
 
+// Mock OpenClawService at the top level to avoid warning
+vi.mock('../../services/OpenClawService', () => ({
+  OpenClawService: {
+    sendMessage: vi.fn().mockResolvedValue({ content: 'Mock agent response', success: true }),
+    healthCheck: vi.fn().mockResolvedValue({ status: 'healthy', mode: 'cli' }),
+  },
+  createOpenClawService: vi.fn(() => ({
+    sendMessage: vi.fn().mockResolvedValue({ content: 'Mock agent response', success: true }),
+    healthCheck: vi.fn().mockResolvedValue({ status: 'healthy', mode: 'cli' }),
+  })),
+}));
+
 let app: any;
 let server: Server;
 
@@ -62,7 +74,7 @@ describe('Messages API - GET /api/messages/rooms/:roomId', () => {
 
       const response = await request(app).get(`/api/messages/rooms/${room.id}`).expect(200);
 
-      expect(response.body).toEqual([]);
+      expect(response.body.messages).toEqual([]);
     });
   });
 
@@ -88,9 +100,9 @@ describe('Messages API - GET /api/messages/rooms/:roomId', () => {
 
       const response = await request(app).get(`/api/messages/rooms/${room.id}`).expect(200);
 
-      expect(response.body).toHaveLength(1);
-      expect(response.body[0].content).toBe('Hello from Mom');
-      expect(response.body[0].agentName).toBe('Mom');
+      expect(response.body.messages).toHaveLength(1);
+      expect(response.body.messages[0].content).toBe('Hello from Mom');
+      expect(response.body.messages[0].agentName).toBe('Mom');
     });
   });
 
@@ -117,8 +129,8 @@ describe('Messages API - GET /api/messages/rooms/:roomId', () => {
 
       const response = await request(app).get(`/api/messages/rooms/${room.id}`).expect(200);
 
-      expect(response.body[0].agentName).toBe('Dad');
-      expect(response.body[0].agentAvatar).toBe('👨');
+      expect(response.body.messages[0].agentName).toBe('Dad');
+      expect(response.body.messages[0].agentAvatar).toBe('👨');
     });
   });
 
@@ -147,7 +159,7 @@ describe('Messages API - GET /api/messages/rooms/:roomId', () => {
 
       const response = await request(app).get(`/api/messages/rooms/${room.id}?limit=5`).expect(200);
 
-      expect(response.body).toHaveLength(5);
+      expect(response.body.messages).toHaveLength(5);
     });
   });
 });
@@ -238,14 +250,6 @@ describe('Messages API - POST /api/rooms/:roomId/messages', () => {
         data: createTestAgentData({ id: 'family-mom', name: 'Mom', roomId: room.id }) as any,
       });
 
-      // Mock OpenClawService to avoid actual CLI calls
-      vi.mock('../services/OpenClawService', () => ({
-        OpenClawService: {
-          sendMessage: vi.fn().mockResolvedValue({ content: 'Agent response' }),
-          healthCheck: vi.fn().mockResolvedValue({ status: 'healthy' }),
-        },
-      }));
-
       const response = await request(app)
         .post(`/api/messages/rooms/${room.id}/messages`)
         .send({
@@ -321,7 +325,7 @@ describe('Messages API - Error Handling', () => {
 
       const response = await request(app).get(`/api/messages/rooms/${room.id}`).expect(200);
 
-      expect(response.body).toBeDefined();
+      expect(response.body.messages).toBeDefined();
     });
   });
 
@@ -366,7 +370,7 @@ describe('Messages API - Message Transformation', () => {
 
       const response = await request(app).get(`/api/messages/rooms/${room.id}`).expect(200);
 
-      const message = response.body[0];
+      const message = response.body.messages[0];
       expect(message.agentName).toBe('Bro');
       expect(message.agentAvatar).toBe('👦');
       expect(message.content).toBe('Bro message');
@@ -389,11 +393,10 @@ describe('Messages API - Message Transformation', () => {
 
       const response = await request(app).get(`/api/messages/rooms/${room.id}`).expect(200);
 
-      const message = response.body[0];
-      expect(message.agentName).toBeUndefined();
-      expect(message.agentAvatar).toBeUndefined();
-      expect(message.content).toBe('Human message');
-      expect(message.senderType).toBe('human');
+      expect(response.body.messages[0].agentName).toBeUndefined();
+      expect(response.body.messages[0].agentAvatar).toBeUndefined();
+      expect(response.body.messages[0].content).toBe('Human message');
+      expect(response.body.messages[0].senderType).toBe('human');
     });
   });
 });
@@ -427,7 +430,7 @@ describe('Messages API - Performance', () => {
 
       const duration = Date.now() - startTime;
 
-      expect(response.body).toHaveLength(100);
+      expect(response.body.messages).toHaveLength(100);
       expect(duration).toBeLessThan(1000); // Should complete in < 1s
     });
   });

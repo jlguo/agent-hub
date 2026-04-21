@@ -7,7 +7,7 @@
 
 import express from 'express';
 import { verifyToken, verifyApiKey, AuthRequest } from '../middleware/auth';
-import { OpenClawService, AgentContext } from '../services/OpenClawService';
+import { openClawService, OpenClawSendResult } from '../services/OpenClawService';
 
 const router = express.Router();
 
@@ -15,7 +15,7 @@ export interface GatewayRequest {
   message: string;
   agent: string;
   sessionId: string;
-  context?: AgentContext;
+  context?: Record<string, any>;
   deliver?: boolean;
   replyAccount?: string;
   replyTo?: string;
@@ -118,24 +118,27 @@ router.post(
       console.log(`  Message length: ${message.length} chars`);
 
       // Call OpenClaw service
-      const openClawService = OpenClawService;
-      const response = await openClawService.sendMessage(
+      const result: OpenClawSendResult = await openClawService.sendMessage(
         message,
         agent,
-        sessionId,
-        context,
-        deliver,
-        replyAccount,
-        replyTo
+        sessionId
       );
 
       const duration = Date.now() - startTime;
 
+      if (!result.success) {
+        return res.status(500).json({
+          error: 'Failed to process request',
+          message: result.error || 'Unknown error',
+          duration,
+        });
+      }
+
       // Return response
-      const result: GatewayResponse = {
+      const responseResult: GatewayResponse = {
         success: true,
-        content: response.content,
-        usage: response.usage,
+        content: result.response || '',
+        usage: undefined,
         metadata: {
           agent,
           sessionId,
@@ -145,7 +148,7 @@ router.post(
       };
 
       console.log(`[OpenClaw Gateway] ✅ Success in ${duration}ms`);
-      res.json(result);
+      res.json(responseResult);
     } catch (error: any) {
       const duration = Date.now() - startTime;
       console.error(`[OpenClaw Gateway] ❌ Error after ${duration}ms:`, error.message);

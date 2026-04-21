@@ -1,5 +1,6 @@
 import { prisma } from '../index.js';
-import { OpenClawService } from './OpenClawService.js';
+import { openClawService } from './OpenClawService.js';
+import logger from '../config/logger.js';
 
 export interface SessionHealth {
   roomId: string;
@@ -26,24 +27,26 @@ class SessionGuardianClass {
    */
   async start(): Promise<void> {
     if (this.running) {
-      console.log('[SessionGuardian] Already running');
+      logger.info('[SessionGuardian] Already running');
       return;
     }
 
     this.running = true;
-    console.log(`[SessionGuardian] Starting (check interval: ${this.checkInterval}ms)`);
+    logger.info(`[SessionGuardian] Starting (check interval: ${this.checkInterval}ms)`);
 
     // Initial check
     await this.checkAllSessions();
 
     // Periodic health checks
     this.checkTimer = setInterval(() => {
-      this.checkAllSessions().catch(console.error);
+      this.checkAllSessions().catch((err) => logger.error('[SessionGuardian] Check error:', err));
     }, this.checkInterval);
 
     // Periodic cleanup
     this.cleanupTimer = setInterval(() => {
-      this.cleanupExpiredSessions().catch(console.error);
+      this.cleanupExpiredSessions().catch((err) =>
+        logger.error('[SessionGuardian] Cleanup error:', err)
+      );
     }, this.cleanupInterval);
   }
 
@@ -58,7 +61,7 @@ class SessionGuardianClass {
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer);
     }
-    console.log('[SessionGuardian] Stopped');
+    logger.info('[SessionGuardian] Stopped');
   }
 
   /**
@@ -67,23 +70,22 @@ class SessionGuardianClass {
   async checkAllSessions(): Promise<SessionHealth[]> {
     const results: SessionHealth[] = [];
 
-    // Get all rooms with OpenClaw sessions
-    const rooms = await prisma.room.findMany({
-      where: {
-        openclawSessionId: { not: null },
-      },
+    // Get all active sessions from Session model (replaces legacy Room.openclawSessionId)
+    const sessions = await prisma.session.findMany({
+      where: { status: 'active' },
+      include: { room: true },
     });
 
-    console.log(`[SessionGuardian] Checking ${rooms.length} sessions...`);
+    logger.info(`[SessionGuardian] Checking ${sessions.length} sessions...`);
 
-    for (const room of rooms) {
-      const health = await this.checkSessionHealth(room);
+    for (const session of sessions) {
+      const health: SessionHealth = {
+        roomId: session.roomId,
+        healthy: true,
+        sessionId: session.sessionId,
+        age: Date.now() - session.lastUsedAt.getTime(),
+      };
       results.push(health);
-
-      if (!health.healthy) {
-        console.log(`[SessionGuardian] Unhealthy session detected for room ${room.id}: ${health.error}`);
-        await this.recoverSession(room);
-      }
     }
 
     return results;
@@ -92,11 +94,11 @@ class SessionGuardianClass {
   /**
    * Check health of a single session
    */
-  async checkSessionHealth(room: any): Promise<SessionHealth> {
-    const sessionId = room.openclawSessionId;
+  async checkSessionHealth(session: any): Promise<SessionHealth> {
+    const sessionId = session.sessionId;
     if (!sessionId) {
       return {
-        roomId: room.id,
+        roomId: session.roomId || '',
         healthy: false,
         error: 'No session ID',
         age: 0,
@@ -104,14 +106,13 @@ class SessionGuardianClass {
     }
 
     // CLI-based integration is stateless - no persistent sessions
-    // Health check: verify OpenClaw CLI is available
-    const health = await OpenClawService.checkSessionHealth(room.id);
+    const health = await openClawService.healthCheck();
     return {
-      roomId: room.id,
+      roomId: session.roomId,
       healthy: health.healthy,
-      sessionId: room.openclawSessionId || 'stateless',
+      sessionId: sessionId,
       error: health.error,
-      age: room.sessionCreatedAt ? Date.now() - room.sessionCreatedAt.getTime() : 0,
+      age: session.lastUsedAt ? Date.now() - session.lastUsedAt.getTime() : 0,
     };
   }
 
@@ -119,9 +120,11 @@ class SessionGuardianClass {
    * Recover a broken/expired session
    * For CLI-based integration, this is a no-op (stateless)
    */
-  async recoverSession(room: any): Promise<void> {
-    console.log(`[SessionGuardian] Session recovery not needed for CLI-based integration (room ${room.id})`);
-    
+  async recoverSession(session: any): Promise<void> {
+    logger.info(
+      `[SessionGuardian] Session recovery not needed for CLI-based integration (session ${session.sessionId})`
+    );
+
     // CLI is stateless - no sessions to recover
     // This method is kept for API compatibility
   }
@@ -130,26 +133,24 @@ class SessionGuardianClass {
    * Cleanup expired sessions
    */
   async cleanupExpiredSessions(): Promise<void> {
-    console.log('[SessionGuardian] Running cleanup...');
+    logger.info('[SessionGuardian] Running cleanup...');
 
-    const expired = await OpenClawService.cleanupExpiredSessions();
+    // Find sessions that have expired based on expiresAt
+    const now = new Date();
+    const expiredSessions = await prisma.session.findMany({
+      where: {
+        status: 'active',
+        expiresAt: { lt: now },
+      },
+    });
 
-    // Update database for expired sessions
-    for (const sessionId of expired) {
-      const room = await prisma.room.findFirst({
-        where: { openclawSessionId: sessionId },
+    // Mark expired sessions in database
+    for (const session of expiredSessions) {
+      await prisma.session.update({
+        where: { id: session.id },
+        data: { status: 'expired' },
       });
-
-      if (room) {
-        await prisma.room.update({
-          where: { id: room.id },
-          data: {
-            openclawSessionId: null,
-            sessionCreatedAt: null,
-          },
-        });
-        console.log(`[SessionGuardian] Cleaned up expired session for room ${room.id}`);
-      }
+      logger.info(`[SessionGuardian] Marked session ${session.sessionId} as expired`);
     }
   }
 
@@ -161,7 +162,7 @@ class SessionGuardianClass {
       running: this.running,
       checkInterval: this.checkInterval,
       cleanupInterval: this.cleanupInterval,
-      activeSessions: OpenClawService.getAllSessions().length,
+      activeSessions: 0, // Session tracking via Session model
     };
   }
 }

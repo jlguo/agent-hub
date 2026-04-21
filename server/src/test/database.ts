@@ -10,12 +10,13 @@
 import { PrismaClient, Agent, Room, Relationship } from '@prisma/client';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import path from 'path';
+import { TEST_DB_ABSOLUTE } from './setup';
 
 const execAsync = promisify(exec);
 
-// Test database path (relative to project root)
-const TEST_DB_PATH = 'prisma/test.db';
-const SCHEMA_PATH = 'prisma/schema.prisma';
+// Schema path (database.ts is at server/src/test/database.ts)
+const SCHEMA_ABSOLUTE = path.resolve(__dirname, '../../../prisma/schema.prisma');
 
 /**
  * Create a fresh test database
@@ -26,13 +27,12 @@ export async function setupTestDatabase(): Promise<void> {
   try {
     console.log('📦 Setting up test database...');
 
-    // Remove existing test database if it exists
-    await execAsync(`rm -f ${TEST_DB_PATH}`);
+    // Remove existing test database if it exists (using absolute path)
+    await execAsync(`rm -f ${TEST_DB_ABSOLUTE}`);
 
     // Use db push instead of migrate for faster setup (schema only, no migration history)
-    // Run from project root directory to resolve paths correctly
     await execAsync(
-      `cd .. && DATABASE_URL=file:${TEST_DB_PATH} npx prisma db push --schema=${SCHEMA_PATH} --accept-data-loss`
+      `DATABASE_URL=file:${TEST_DB_ABSOLUTE} npx prisma db push --schema=${SCHEMA_ABSOLUTE} --accept-data-loss`
     );
 
     console.log('✅ Test database created successfully');
@@ -50,7 +50,7 @@ export async function cleanupTestDatabase(): Promise<void> {
     const prisma = new PrismaClient({
       datasources: {
         db: {
-          url: `file:${TEST_DB_PATH}`,
+          url: `file:${TEST_DB_ABSOLUTE}`,
         },
       },
     });
@@ -93,7 +93,7 @@ export function getTestPrismaClient(): PrismaClient {
   return new PrismaClient({
     datasources: {
       db: {
-        url: `file:${TEST_DB_PATH}`,
+        url: `file:${TEST_DB_ABSOLUTE}`,
       },
     },
   });

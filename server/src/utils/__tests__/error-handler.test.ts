@@ -1,6 +1,7 @@
 import {
   AppError,
   ErrorType,
+  ErrorCode,
   errors,
   safeExecute,
   formatErrorResponse,
@@ -13,15 +14,17 @@ describe('AppError', () => {
 
     expect(error.message).toBe('Test error');
     expect(error.type).toBe(ErrorType.UNKNOWN);
+    expect(error.code).toBe(ErrorCode.INTERNAL_ERROR);
     expect(error.statusCode).toBe(500);
     expect(error.isOperational).toBe(true);
     expect(error.timestamp).toBeInstanceOf(Date);
   });
 
   it('should create an error with custom values', () => {
-    const error = new AppError('Custom error', ErrorType.VALIDATION, 400, { field: 'email' });
+    const error = new AppError('Custom error', ErrorCode.VALIDATION_ERROR, 400, { field: 'email' });
 
     expect(error.message).toBe('Custom error');
+    expect(error.code).toBe(ErrorCode.VALIDATION_ERROR);
     expect(error.type).toBe(ErrorType.VALIDATION);
     expect(error.statusCode).toBe(400);
     expect(error.context).toEqual({ field: 'email' });
@@ -125,17 +128,18 @@ describe('safeExecute', () => {
 
 describe('formatErrorResponse', () => {
   it('should format AppError correctly', () => {
-    const error = new AppError('Test error', ErrorType.VALIDATION, 400, { field: 'email' });
+    const error = new AppError('Test error', ErrorCode.VALIDATION_ERROR, 400, { field: 'email' });
 
     const response = formatErrorResponse(error);
 
     expect(response).toEqual({
       success: false,
       error: {
+        code: ErrorCode.VALIDATION_ERROR,
         message: 'Test error',
-        type: 'VALIDATION_ERROR',
-        statusCode: 400,
+        details: { field: 'email' },
         timestamp: error.timestamp.toISOString(),
+        path: '',
       },
     });
   });
@@ -148,10 +152,10 @@ describe('formatErrorResponse', () => {
     expect(response).toEqual({
       success: false,
       error: {
+        code: ErrorCode.INTERNAL_ERROR,
         message: 'Plain error',
-        type: 'UNKNOWN_ERROR',
-        statusCode: 500,
         timestamp: expect.any(String),
+        path: '',
       },
     });
   });
