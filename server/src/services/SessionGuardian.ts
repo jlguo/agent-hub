@@ -41,6 +41,7 @@ class SessionGuardianClass {
     this.checkTimer = setInterval(() => {
       this.checkAllSessions().catch((err) => logger.error('[SessionGuardian] Check error:', err));
     }, this.checkInterval);
+    this.checkTimer.unref(); // Don't keep Node alive in tests
 
     // Periodic cleanup
     this.cleanupTimer = setInterval(() => {
@@ -48,6 +49,7 @@ class SessionGuardianClass {
         logger.error('[SessionGuardian] Cleanup error:', err)
       );
     }, this.cleanupInterval);
+    this.cleanupTimer.unref(); // Don't keep Node alive in tests
   }
 
   /**

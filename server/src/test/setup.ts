@@ -9,13 +9,20 @@ import path from 'path';
 // Ensure NODE_ENV is set to test BEFORE any module imports
 process.env.NODE_ENV = 'test';
 
-// Mock SessionGuardian BEFORE index.ts imports it
-vi.mock('../services/SessionGuardian', () => ({
+// Mock SessionGuardian - hoisted to run before any module imports
+const mockSessionGuardian = vi.hoisted(() => ({
+  default: {
+    start: vi.fn(),
+    stop: vi.fn(),
+  },
   SessionGuardian: {
     start: vi.fn(),
     stop: vi.fn(),
   },
 }));
+
+vi.mock('../services/SessionGuardian.js', () => mockSessionGuardian);
+vi.mock('../services/SessionGuardian', () => mockSessionGuardian);
 
 import { PrismaClient } from '@prisma/client';
 
