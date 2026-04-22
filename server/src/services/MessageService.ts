@@ -470,7 +470,7 @@ export async function handleFeishuMessage(
     roomId: string;
     senderType: 'human' | 'agent';
     content: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
   },
   feishuChatId: string,
   sendToFeishu: (chatId: string, content: string) => Promise<void>
@@ -534,17 +534,22 @@ export async function handleFeishuMessage(
       if (discussionTopic) {
         // Trigger autonomous agent discussion
         logger.info(`[MessageService] Discussion triggered from Feishu: "${discussionTopic}"`);
-        import('./DiscussionService.js').then(({ triggerAgentDiscussion }) => {
-          triggerAgentDiscussion(
-            normalizedMessage.roomId,
-            discussionTopic,
-            undefined,
-            sendToFeishu,
-            feishuChatId
-          ).catch((err: any) => {
-            logger.error('[MessageService] Discussion error:', err);
+        import('./DiscussionService.js')
+          .then(({ triggerAgentDiscussion }) => {
+            return triggerAgentDiscussion(
+              normalizedMessage.roomId,
+              discussionTopic,
+              undefined,
+              sendToFeishu,
+              feishuChatId
+            );
+          })
+          .catch((err: Error) => {
+            logger.error('[MessageService] Discussion service error', {
+              message: err.message,
+              stack: err.stack,
+            });
           });
-        });
       } else {
         // Normal agent response with callback to send back to Feishu
         await triggerAgentResponseWithCallback(
@@ -724,8 +729,12 @@ export async function handleFeishuSync(
     const feishuService = new FeishuService();
     await feishuService.sendMessage(room.externalChatId, content);
     logger.info('[MessageService] Web UI message synced to Feishu');
-  } catch (err: any) {
-    logger.error('[MessageService] Feishu sync failed:', err.message);
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    logger.error('[MessageService] Feishu sync failed', {
+      message: error.message,
+      stack: error.stack,
+    });
   }
 }
 
@@ -759,20 +768,42 @@ export async function handleDiscussionTrigger(
   const sendToFeishu =
     roomWithChatId?.externalChatId && roomWithChatId.externalChatId !== 'N/A'
       ? async (chatId: string, content: string) => {
-          const { FeishuService } = await import('./FeishuService.js');
-          const feishuService = new FeishuService();
-          await feishuService.sendMessage(chatId, content);
+          try {
+            const { FeishuService } = await import('./FeishuService.js');
+            const feishuService = new FeishuService();
+            await feishuService.sendMessage(chatId, content);
+          } catch (err) {
+            const error = err instanceof Error ? err : new Error(String(err));
+            logger.error('[MessageService] Feishu message send failed', {
+              message: error.message,
+              stack: error.stack,
+            });
+          }
         }
       : undefined;
 
-  const { triggerAgentDiscussion } = await import('./DiscussionService.js');
-  triggerAgentDiscussion(
-    roomId,
-    discussionTopic,
-    undefined,
-    sendToFeishu,
-    roomWithChatId?.externalChatId || undefined
-  ).catch((err) => logger.error('[MessageService] Discussion error:', err));
+  try {
+    const { triggerAgentDiscussion } = await import('./DiscussionService.js');
+    triggerAgentDiscussion(
+      roomId,
+      discussionTopic,
+      undefined,
+      sendToFeishu,
+      roomWithChatId?.externalChatId || undefined
+    ).catch((err) => {
+      const error = err instanceof Error ? err : new Error(String(err));
+      logger.error('[MessageService] Discussion execution error', {
+        message: error.message,
+        stack: error.stack,
+      });
+    });
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    logger.error('[MessageService] Discussion service import failed', {
+      message: error.message,
+      stack: error.stack,
+    });
+  }
 
   return discussionTopic;
 }

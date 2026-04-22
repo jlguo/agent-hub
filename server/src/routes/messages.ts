@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../index.js';
+import { Prisma } from '@prisma/client';
 import {
   triggerAgentResponse,
   handleFeishuSync,
@@ -17,10 +18,13 @@ router.get('/rooms/:roomId', async (req: Request, res: Response) => {
     const { roomId } = req.params;
     const { limit = String(messageQueryConfig.defaultPaginationLimit), cursor } = req.query;
 
-    const parsedLimit = Math.min(parseInt(limit as string, 10), 500); // Cap at 500
+    const parsedLimit = Math.min(
+      parseInt(limit as string, 10),
+      messageQueryConfig.maxPaginationLimit
+    );
 
     // Build query with optional cursor-based pagination
-    const whereClause: any = { roomId };
+    const whereClause: Prisma.MessageWhereInput = { roomId };
 
     if (cursor) {
       // Cursor-based pagination: find the cursor message's createdAt

@@ -6,6 +6,8 @@
  * Both service-layer and API middleware use AppError.
  */
 
+import logger from '../config/logger';
+
 /**
  * API Error Code Enum
  *
@@ -282,7 +284,7 @@ export async function safeExecute<T>(
     });
 
     // Log error for debugging
-    console.error('[ErrorHandler]', {
+    logger.error('Error handled', {
       type: appError.type,
       message: appError.message,
       context: appError.context,
@@ -341,7 +343,7 @@ export function logError(
     requestId?: string;
   }
 ): void {
-  console.error('[ErrorHandler]', {
+  logger.error('Unhandled error', {
     service: context.service,
     operation: context.operation,
     error: {

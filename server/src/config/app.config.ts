@@ -45,6 +45,8 @@ export const messageQueryConfig = {
   followupMessageLimit: parseIntEnv('FOLLOWUP_MESSAGE_LIMIT', 15),
   /** Default message pagination limit */
   defaultPaginationLimit: parseIntEnv('DEFAULT_PAGINATION_LIMIT', 200),
+  /** Maximum allowed pagination limit (hard cap) */
+  maxPaginationLimit: parseIntEnv('MAX_PAGINATION_LIMIT', 500),
 };
 
 /**

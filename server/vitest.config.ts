@@ -7,6 +7,7 @@ export default defineConfig({
     environment: 'node',
     root: './src',
     include: ['**/*.test.ts'],
+    forceExit: true,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'html', 'json-summary'],
