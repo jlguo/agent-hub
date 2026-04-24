@@ -1,44 +1,80 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../index.js';
-import { triggerAgentResponse } from '../services/MessageService.js';
-import { triggerAgentDiscussion } from '../services/DiscussionService.js';
+import { Prisma } from '@prisma/client';
+import {
+  triggerAgentResponse,
+  handleFeishuSync,
+  handleDiscussionTrigger,
+} from '../services/MessageService.js';
 import { getIO } from '../lib/socket.js';
-import { FeishuService } from '../services/FeishuService.js';
+import logger from '../config/logger.js';
+import { messageQueryConfig } from '../config/app.config.js';
 
 export const router = Router();
 
-// GET /api/messages/rooms/:roomId - Get messages for a room
+// GET /api/messages/rooms/:roomId - Get messages for a room (with cursor-based pagination)
 router.get('/rooms/:roomId', async (req: Request, res: Response) => {
   try {
     const { roomId } = req.params;
-    const { limit = '200' } = req.query;
+    const { limit = String(messageQueryConfig.defaultPaginationLimit), cursor } = req.query;
+
+    const parsedLimit = Math.min(
+      parseInt(limit as string, 10),
+      messageQueryConfig.maxPaginationLimit
+    );
+
+    // Build query with optional cursor-based pagination
+    const whereClause: Prisma.MessageWhereInput = { roomId };
+
+    if (cursor) {
+      // Cursor-based pagination: find the cursor message's createdAt
+      const cursorMessage = await prisma.message.findUnique({
+        where: { id: cursor as string },
+        select: { createdAt: true },
+      });
+
+      if (cursorMessage) {
+        whereClause.createdAt = { gt: cursorMessage.createdAt };
+      }
+    }
 
     const messages = await prisma.message.findMany({
-      where: { roomId },
+      where: whereClause,
       include: {
         agent: {
           select: { name: true, avatar: true },
         },
       },
       orderBy: { createdAt: 'asc' },
-      take: parseInt(limit as string),
+      take: parsedLimit,
     });
 
     // Transform messages to include agentName and agentAvatar at top level for frontend convenience
-    const transformedMessages = messages.map(msg => ({
+    const transformedMessages = messages.map((msg) => ({
       ...msg,
       agentName: msg.agent?.name || undefined,
       agentAvatar: msg.agent?.avatar || undefined,
     }));
 
-    res.json(transformedMessages);
+    // Include pagination metadata
+    const hasMore = messages.length === parsedLimit;
+    const nextCursor = hasMore && messages.length > 0 ? messages[messages.length - 1].id : null;
+
+    res.json({
+      messages: transformedMessages,
+      pagination: {
+        hasMore,
+        nextCursor,
+        limit: parsedLimit,
+      },
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // POST /api/rooms/:roomId/messages - Send a message
-router.post('/rooms/:roomId', async (req: Request, res: Response) => {
+router.post('/rooms/:roomId/messages', async (req: Request, res: Response) => {
   try {
     const { roomId } = req.params;
     const { content, senderType = 'human', agentId } = req.body;
@@ -86,45 +122,24 @@ router.post('/rooms/:roomId', async (req: Request, res: Response) => {
       agentAvatar: message.agent?.avatar || undefined,
     });
 
-    // Sync to Feishu if room has externalChatId (Feishu group)
-    if (senderType === 'human' && room.externalChatId && room.externalChatId !== 'N/A') {
-      const feishuService = new FeishuService();
-      feishuService.sendMessage(room.externalChatId, content)
-        .then(() => console.log('[MessagesRoute] ✅ Web UI message synced to Feishu'))
-        .catch(err => console.error('[MessagesRoute] ❌ Feishu sync failed:', err.message));
-    }
+    // Sync to Feishu if applicable (delegated to MessageService)
+    handleFeishuSync(roomId, content, senderType).catch((err) =>
+      logger.error('[MessagesRoute] Feishu sync error:', err)
+    );
 
     // If human message, check for discussion trigger or normal agent response
     if (senderType === 'human') {
-      // Check if this is a discussion trigger
-      const discussionTopic = content.match(/^\/discuss\s+(.+)/i)?.[1]?.trim() ||
-                             content.match(/^let's discuss\s+(.+)/i)?.[1]?.trim() ||
-                             content.match(/^咱们讨论一下\s*(.+)/i)?.[1]?.trim();
-      
-      if (discussionTopic) {
-        // Trigger autonomous agent discussion
-        console.log(`[MessagesRoute] Discussion triggered: "${discussionTopic}"`);
-        
-        // Get room to check if Feishu sync is needed
-        const roomWithChatId = await prisma.room.findUnique({
-          where: { id: roomId },
-          select: { externalChatId: true },
-        });
-        
-        // Send to Feishu if room has externalChatId
-        const sendToFeishu = roomWithChatId?.externalChatId && roomWithChatId.externalChatId !== 'N/A'
-          ? async (chatId: string, content: string) => {
-              const feishuService = new FeishuService();
-              await feishuService.sendMessage(chatId, content);
-            }
-          : undefined;
-        
-        triggerAgentDiscussion(roomId, discussionTopic, undefined, sendToFeishu, roomWithChatId?.externalChatId || undefined)
-          .catch(console.error);
-      } else {
+      const discussionTopic = await handleDiscussionTrigger(
+        roomId,
+        content,
+        room.description || undefined
+      );
+
+      if (!discussionTopic) {
         // Normal agent response
-        triggerAgentResponse(roomId, content, room.description || undefined)
-          .catch(console.error);
+        triggerAgentResponse(roomId, content, room.description || undefined).catch((err) =>
+          logger.error('[MessagesRoute] Agent response error:', err)
+        );
       }
     }
 

@@ -14,7 +14,8 @@ async function main() {
       name: 'Family',
       type: 'family',
       description: 'A warm family conversation space',
-      context: 'A typical Chinese family with parents, a child, and grandparents. Conversations are warm, caring, and sometimes playful.',
+      context:
+        'A typical Chinese family with parents, a child, and grandparents. Conversations are warm, caring, and sometimes playful.',
     },
   });
 
@@ -38,7 +39,8 @@ async function main() {
       empathy: 60,
       curiosity: 50,
       responseDelay: 1500,
-      systemPrompt: 'You are a caring father who loves to share stories and give advice. You are talkative and enjoy family conversations.',
+      systemPrompt:
+        'You are a caring father who loves to share stories and give advice. You are talkative and enjoy family conversations.',
     },
   });
 
@@ -59,7 +61,8 @@ async function main() {
       empathy: 80,
       curiosity: 60,
       responseDelay: 1200,
-      systemPrompt: 'You are a warm and empathetic mother who cares deeply about the family. You listen well and offer thoughtful responses.',
+      systemPrompt:
+        'You are a warm and empathetic mother who cares deeply about the family. You listen well and offer thoughtful responses.',
     },
   });
 
@@ -80,7 +83,8 @@ async function main() {
       empathy: 40,
       curiosity: 80,
       responseDelay: 800,
-      systemPrompt: 'You are a curious and energetic child who loves to ask questions and learn new things. You are playful and sometimes mischievous.',
+      systemPrompt:
+        'You are a curious and energetic child who loves to ask questions and learn new things. You are playful and sometimes mischievous.',
     },
   });
 
@@ -119,7 +123,7 @@ async function main() {
       agentBId: child.id,
       type: 'parent-of',
       strength: 95,
-      context: 'Nurturing mother, very attentive to child\'s needs',
+      context: "Nurturing mother, very attentive to child's needs",
     },
   });
 
@@ -132,7 +136,9 @@ async function main() {
       topic: 'What should we do this weekend?',
       heatScore: 75,
       status: 'active',
-      participants: JSON.stringify([dad.id, mom.id, child.id]),
+      participants: {
+        create: [{ agentId: dad.id }, { agentId: mom.id }, { agentId: child.id }],
+      },
     },
   });
 

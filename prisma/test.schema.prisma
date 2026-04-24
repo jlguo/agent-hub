@@ -1,0 +1,161 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url = "file:./test.db"
+}
+
+// Room - represents a conversation space (e.g., "Family")
+model Room {
+  id          String   @id @default(uuid())
+  name        String
+  type        String   @default("family") // family, friends, colleagues
+  description String?
+  context     String?  // Room-specific context for AI
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // External chat platform mapping (e.g., Feishu group ID)
+  externalChatId String?
+  
+  agents      Agent[]
+  messages    Message[]
+  discussions Discussion[]
+  sessions    Session[]
+}
+
+// Agent - an AI persona in a room
+model Agent {
+  id            String   @id @default(uuid())
+  roomId        String
+  room          Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  
+  name          String
+  role          String   // e.g., "father", "mother", "child", "grandparent"
+  avatar        String?  // URL or emoji
+  
+  // Personality traits (0-100)
+  talkativeness Int      @default(50)
+  empathy       Int      @default(50)
+  curiosity     Int      @default(50)
+  
+  // System prompt override (optional)
+  systemPrompt  String?
+  
+  // Status
+  isActive      Boolean  @default(true)
+  responseDelay Int      @default(1000) // ms, for realism
+  
+  // Relationships to other agents
+  relationshipsAsA Relationship[] @relation("AgentARelationships")
+  relationshipsAsB Relationship[] @relation("AgentBRelationships")
+  
+  // Messages from this agent
+  messages Message[]
+
+  // Discussion participation
+  discussionParticipants DiscussionParticipant[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@unique([roomId, name])
+}
+
+// Relationship - defines how agents relate to each other
+model Relationship {
+  id          String @id @default(uuid())
+  agentAId    String
+  agentBId    String
+  agentA      Agent  @relation("AgentARelationships", fields: [agentAId], references: [id], onDelete: Cascade)
+  agentB      Agent  @relation("AgentBRelationships", fields: [agentBId], references: [id], onDelete: Cascade)
+  
+  type        String // parent-of, child-of, spouse, sibling, friend, colleague
+  strength    Int    @default(50) // 0-100
+  context     String? // Additional context about the relationship
+  
+  createdAt   DateTime @default(now())
+  
+  @@unique([agentAId, agentBId])
+  @@index([agentBId])
+}
+
+// Message - conversation history
+model Message {
+  id           String   @id @default(uuid())
+  roomId       String
+  room         Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  
+  agentId      String?  // null if from human
+  agent        Agent?   @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  
+  discussionId String?  // Link to discussion (NEW)
+  discussion   Discussion? @relation(fields: [discussionId], references: [id], onDelete: SetNull)
+  
+  senderType   String   // "human" or "agent" (replaces role)
+  content      String
+  
+  // Metadata
+  metadata     String?  // JSON string for additional data
+  
+  createdAt    DateTime @default(now())
+  
+  @@index([roomId, createdAt])
+  @@index([discussionId, createdAt]) // NEW: For discussion messages
+  @@index([agentId, createdAt])      // NEW: For agent messages
+}
+
+// Session - tracks OpenClaw gateway sessions
+model Session {
+  id         String   @id @default(uuid())
+  roomId     String
+  room       Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  
+  sessionId  String   @unique // OpenClaw session ID
+  status     String   @default("active") // active, expired, terminated
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime?
+  lastUsedAt DateTime @updatedAt
+  
+  @@index([roomId, status])
+}
+
+// Discussion - tracks active topic discussions
+model Discussion {
+  id         String    @id @default(uuid())
+  roomId     String
+  room       Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  
+  topic      String
+  heatScore  Int       @default(0) // Calculated field (0-100)
+  status     String    @default("active") // active, cooling, archived
+  
+  // Participants via relation
+  participants DiscussionParticipant[]
+
+  messages   Message[] // Messages in this discussion
+  
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archivedAt DateTime? // Renamed from endedAt
+  
+  @@index([roomId, status])
+  @@index([roomId, createdAt]) // For recent discussions
+}
+
+// DiscussionParticipant - join table for Discussion-Agent many-to-many
+model DiscussionParticipant {
+  id           String     @id @default(uuid())
+  discussionId String
+  agentId      String
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  agent        Agent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  joinedAt     DateTime   @default(now())
+
+  @@unique([discussionId, agentId])
+  @@index([agentId])
+}

@@ -1,0 +1,15 @@
+export default {
+  semi: true,
+  singleQuote: true,
+  tabWidth: 2,
+  trailingComma: 'es5',
+  printWidth: 100,
+  overrides: [
+    {
+      files: '*.json',
+      options: {
+        printWidth: 200,
+      },
+    },
+  ],
+};

@@ -1,0 +1,78 @@
+# Multi-stage build for Agent Hub Backend
+FROM node:22-alpine AS base
+
+# Install OpenSSL 3 for Prisma compatibility (Alpine 3.18+) + wget for health checks
+RUN apk add --no-cache openssl3 libssl3 libc6-compat wget
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Stage 2: Build stage
+FROM base AS builder
+
+# Use npm install instead of ci (more resilient to network issues)
+RUN npm install
+
+# Copy server source
+COPY server/ ./server/
+COPY prisma/ ./prisma/
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Build TypeScript to JavaScript
+RUN npm run build
+
+# Stage 3: Production image
+FROM node:22-alpine AS production
+
+# Install SSH client for tunnel creation + other dependencies
+RUN apk add --no-cache openssh-client
+
+# Set working directory FIRST before any COPY commands
+WORKDIR /app
+
+# Install su-exec for privilege dropping, OpenClaw CLI, and Feishu SDK for remote mode
+RUN apk add --no-cache su-exec && \
+    npm install -g openclaw@latest && \
+    npm install -g @larksuiteoapi/node-sdk
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nodeuser
+
+# Install production dependencies only
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+# Copy built output from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/package.json ./package.json
+# Create server/prisma directory and copy schema.prisma from build context
+RUN mkdir -p /app/server/prisma
+COPY prisma/schema.prisma ./server/prisma/schema.prisma
+
+# Create prisma directory with correct ownership for volume mount
+RUN mkdir -p /app/prisma && \
+    chown nodeuser:nodejs /app/prisma && \
+    chown -R nodeuser:nodejs /app
+
+# Copy entrypoint script for database initialization
+COPY docker/docker-entrypoint-initdb.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint-initdb.sh
+
+USER nodeuser
+WORKDIR /app
+
+# Expose port
+EXPOSE 4000
+
+# Health check (use 127.0.0.1 to force IPv4)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:4000/health || exit 1
+
+# Start server in production mode
+CMD ["npm", "run", "start"]

@@ -1,0 +1,157 @@
+# Remote Mode Configuration for Agent Hub
+# Deploy with: helm install agent-hub-remote ./k8s/helm/agent-hub -f values-remote.yaml
+
+# Use same images as dev
+image:
+  backend:
+    repository: agent-hub-backend
+    tag: "latest"
+  frontend:
+    repository: agent-hub-frontend
+    tag: "latest"
+
+# Single replica for now (can scale frontend separately)
+replicaCount: 1
+
+# Remote mode environment variables
+backend:
+  env:
+    # OpenClaw Remote Mode
+    - name: OPENCLAW_MODE
+      value: "remote"
+    - name: OPENCLAW_VERIFICATION_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: agent-hub-secrets
+          key: openclaw-verification-token
+    
+    # SSH Tunnel Configuration
+    - name: SSH_HOST
+      valueFrom:
+        secretKeyRef:
+          name: agent-hub-secrets
+          key: ssh-host
+    - name: SSH_USER
+      valueFrom:
+        secretKeyRef:
+          name: agent-hub-secrets
+          key: ssh-user
+    - name: SSH_PORT
+      value: "22"
+    
+    # Feishu Integration
+    - name: FEISHU_APP_ID
+      valueFrom:
+        secretKeyRef:
+          name: agent-hub-secrets
+          key: feishu-app-id
+    - name: FEISHU_APP_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: agent-hub-secrets
+          key: feishu-app-secret
+    - name: FEISHU_CHAT_ID
+      valueFrom:
+        secretKeyRef:
+          name: agent-hub-secrets
+          key: feishu-chat-id
+    - name: FEISHU_VERIFY_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: agent-hub-secrets
+          key: feishu-verify-token
+    
+    # Security
+    - name: JWT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: agent-hub-secrets
+          key: jwt-secret
+    - name: ENCRYPTION_KEY
+      valueFrom:
+        secretKeyRef:
+          name: agent-hub-secrets
+          key: encryption-key
+
+# SSH Tunnel Sidecar Configuration
+sshTunnel:
+  enabled: true
+  image:
+    repository: agent-hub-ssh-tunnel
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  # SSH tunnel resources
+  resources:
+    limits:
+      cpu: 100m
+      memory: 64Mi
+    requests:
+      cpu: 50m
+      memory: 32Mi
+  
+  # Health check configuration
+  healthcheck:
+    interval: 30s
+    timeout: 10s
+    startPeriod: 10s
+    retries: 3
+  
+  # SSH keepalive settings
+  keepalive:
+    interval: 60
+    count: 3
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+
+# Persistence for database
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClass: ""
+
+# Service configuration
+service:
+  backend:
+    port: 4000
+    type: ClusterIP
+  frontend:
+    port: 3000
+    type: ClusterIP
+
+# Ingress disabled for remote mode (use LoadBalancer or port-forward)
+ingress:
+  enabled: false
+
+# Monitoring enabled
+monitoring:
+  serviceMonitor:
+    enabled: true
+  prometheusRules:
+    enabled: true
+
+# Resource quotas
+backend:
+  resources:
+    limits:
+      cpu: "1"
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+frontend:
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 200m
+      memory: 256Mi

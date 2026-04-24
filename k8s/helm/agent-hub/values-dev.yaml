@@ -1,0 +1,99 @@
+# Development overrides for local Kubernetes (Docker Desktop)
+
+replicaCount: 1
+
+image:
+  backend:
+    repository: agent-hub-backend
+    pullPolicy: Never  # Use only local images
+    tag: "dev"
+  frontend:
+    repository: agent-hub-frontend
+    pullPolicy: Never
+    tag: "dev"
+
+# Security context with seccompProfile for PodSecurity compliance
+backend:
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+      - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts: []
+  extraArgs: []
+
+frontend:
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+      - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts: []
+  extraArgs: []
+
+# Use emptyDir instead of PVC for local dev
+persistence:
+  enabled: false
+
+volumes:
+- name: prisma-storage
+  emptyDir: {}
+- name: logs-storage
+  emptyDir: {}
+
+# Disable ingress for local dev (use port-forward)
+ingress:
+  enabled: false
+
+# Disable autoscaling for dev
+autoscaling:
+  enabled: false
+
+# Enable network policy
+networkPolicy:
+  enabled: true
+
+# Disable monitoring for local dev (no Prometheus Operator)
+monitoring:
+  enabled: false
+  serviceMonitor:
+    enabled: false
+  prometheusRules:
+    enabled: false
+
+# Development config
+config:
+  NODE_ENV: "development"
+  PORT: "4000"
+  FRONTEND_URL: "http://localhost:3000"
+  BACKEND_URL: "http://localhost:4000"
+  DATABASE_URL: "file:/app/prisma/prod.db"
+  LOG_LEVEL: "debug"  # Verbose logging for dev
+
+# Resources (lower for local dev)
+backend:
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+frontend:
+  resources:
+    requests:
+      cpu: "25m"
+      memory: "64Mi"
+    limits:
+      cpu: "100m"
+      memory: "128Mi"
+
+# Secrets should be in secrets.local.yaml (not committed)
+# Include with: --values secrets.local.yaml

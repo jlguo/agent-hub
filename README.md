@@ -13,6 +13,7 @@
 Agent Hub brings AI family members to life in group chats. Six distinct personalities (Dad, Mom, Bro, Sis, Grandma, Grandpa) engage in natural conversations with context awareness, relationship dynamics, and heat-based engagement.
 
 **Key Features**:
+
 - 🔥 Heat-based response system (agents respond more to active conversations)
 - 📣 @Mention targeting (100% priority, chain reactions)
 - 💬 Autonomous discussions (`/discuss [topic]`)
@@ -24,20 +25,21 @@ Agent Hub brings AI family members to life in group chats. Six distinct personal
 
 ## 📚 Documentation
 
-| Document | Description |
-|----------|-------------|
-| **[STATUS.md](STATUS.md)** | Current system status, database stats, working features |
-| **[ARCHITECTURE.md](ARCHITECTURE.md)** | System architecture, data flow, component design |
-| **[docs/PHASES.md](docs/PHASES.md)** | Development phases, timelines, completed features |
-| **[docs/FEATURES.md](docs/FEATURES.md)** | Comprehensive feature documentation (12 features) |
-| **[TROUBLESHOOTING-GUIDE.md](TROUBLESHOOTING-GUIDE.md)** | 15 common issues with solutions |
-| **[QUICK-REFERENCE.md](QUICK-REFERENCE.md)** | Key IDs, commands, shortcuts |
+| Document                                                 | Description                                             |
+| -------------------------------------------------------- | ------------------------------------------------------- |
+| **[STATUS.md](STATUS.md)**                               | Current system status, database stats, working features |
+| **[ARCHITECTURE.md](ARCHITECTURE.md)**                   | System architecture, data flow, component design        |
+| **[docs/PHASES.md](docs/PHASES.md)**                     | Development phases, timelines, completed features       |
+| **[docs/FEATURES.md](docs/FEATURES.md)**                 | Comprehensive feature documentation (12 features)       |
+| **[TROUBLESHOOTING-GUIDE.md](TROUBLESHOOTING-GUIDE.md)** | 15 common issues with solutions                         |
+| **[QUICK-REFERENCE.md](QUICK-REFERENCE.md)**             | Key IDs, commands, shortcuts                            |
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 18+
 - npm or yarn
 - OpenClaw CLI (for AI agents)
@@ -104,13 +106,13 @@ npx playwright test tests/e2e/web-ui.spec.ts
 
 ### Components
 
-| Component | Port | Technology | Purpose |
-|-----------|------|------------|---------|
-| Backend API | 4000 | Express.js + TypeScript | REST API, WebSocket, business logic |
-| Frontend | 3000 | Next.js 14 + React | Web UI, real-time chat |
-| Database | - | SQLite + Prisma ORM | Data persistence |
-| Feishu Gateway | - | @larksuiteoapi/node-sdk | Feishu integration |
-| OpenClaw | - | CLI | AI agent generation |
+| Component      | Port | Technology              | Purpose                             |
+| -------------- | ---- | ----------------------- | ----------------------------------- |
+| Backend API    | 4000 | Express.js + TypeScript | REST API, WebSocket, business logic |
+| Frontend       | 3000 | Next.js 14 + React      | Web UI, real-time chat              |
+| Database       | -    | SQLite + Prisma ORM     | Data persistence                    |
+| Feishu Gateway | -    | @larksuiteoapi/node-sdk | Feishu integration                  |
+| OpenClaw       | -    | CLI                     | AI agent generation                 |
 
 ### Data Models
 
@@ -125,14 +127,14 @@ npx playwright test tests/e2e/web-ui.spec.ts
 
 ## 👥 Agent Family
 
-| Agent | Name | Role | Talk | Emp | Cur | Avatar |
-|-------|------|------|------|-----|-----|--------|
-| Dad | 张建国 | Father | 70 | 60 | 50 | 👨 |
-| Mom | 李秀英 | Mother | 60 | 80 | 60 | 👩 |
-| Bro | 张小明 | Brother | 60 | 50 | 70 | 👦 |
-| Sis | 张小雨 | Sister | 70 | 60 | 80 | 👧 |
-| Grandma | 王桂英 | Grandmother | 70 | 90 | 60 | 👵 |
-| Grandpa | 张德明 | Grandfather | 60 | 80 | 50 | 👴 |
+| Agent   | Name   | Role        | Talk | Emp | Cur | Avatar |
+| ------- | ------ | ----------- | ---- | --- | --- | ------ |
+| Dad     | 张建国 | Father      | 70   | 60  | 50  | 👨     |
+| Mom     | 李秀英 | Mother      | 60   | 80  | 60  | 👩     |
+| Bro     | 张小明 | Brother     | 60   | 50  | 70  | 👦     |
+| Sis     | 张小雨 | Sister      | 70   | 60  | 80  | 👧     |
+| Grandma | 王桂英 | Grandmother | 70   | 90  | 60  | 👵     |
+| Grandpa | 张德明 | Grandfather | 60   | 80  | 50  | 👴     |
 
 **Relationships**: 27 total connections (spouse, parent-child, siblings, grandparents, in-laws)
 
@@ -141,33 +143,39 @@ npx playwright test tests/e2e/web-ui.spec.ts
 ## 🎮 Features
 
 ### 1. Heat-Based Responses 🔥
+
 - **0-100 scale** with 15% decay per 30s
 - **Thresholds**: HOT (70+ = 80%), WARM (40-70 = 50%), COLD (20-40 = 30%), INACTIVE (<20 = 10%)
 - Agents respond more to active conversations
 
 ### 2. @Mention Targeting 📣
+
 - **100% priority** for mentioned agents (bypasses heat probability)
 - **Agent-to-agent** chain reactions (Bro → @Dad @Mom → both respond)
 - **60s cooldown** per agent to prevent spam
 - **Smart fallback** for unknown @mentions
 
 ### 3. Autonomous Discussions 💬
+
 - **Commands**: `/discuss [topic]`, "Let's discuss [topic]"
 - **2-4 agents** participate with 4-8 turns
 - **2-3s delays** between responses for natural flow
 - **System banners** for start/end (purple styling)
 
 ### 4. Conversation Context 🧠
+
 - **Last 20 messages** loaded from database
 - **Multi-turn awareness** (reference previous messages)
 - **Relationship context** included in prompts
 
 ### 5. Bidirectional Sync 🔄
+
 - **Feishu → Web UI**: Real-time via WebSocket
 - **Web UI → Feishu**: HTTP API with SDK
 - **Discussions sync**: Both directions with system banners
 
 ### 6. Real-Time Updates ⚡
+
 - **Socket.io** for WebSocket communication
 - **~50-100ms latency** for message delivery
 - **Auto-reconnect** with exponential backoff
@@ -180,17 +188,19 @@ npx playwright test tests/e2e/web-ui.spec.ts
 ## 📊 Current Status
 
 ### System Health
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Backend (4000) | ✅ Running | tsx watch mode |
-| Frontend (3000) | ✅ Running | Next.js dev |
-| Database | ✅ Connected | SQLite |
-| Feishu WebSocket | ✅ Connected | Official SDK |
-| OpenClaw CLI | ✅ Working | 120s timeout |
-| Heat Tracker | ✅ Active | 30s decay cycle |
-| WebSocket | ✅ Connected | Socket.io |
+
+| Component        | Status       | Notes           |
+| ---------------- | ------------ | --------------- |
+| Backend (4000)   | ✅ Running   | tsx watch mode  |
+| Frontend (3000)  | ✅ Running   | Next.js dev     |
+| Database         | ✅ Connected | SQLite          |
+| Feishu WebSocket | ✅ Connected | Official SDK    |
+| OpenClaw CLI     | ✅ Working   | 120s timeout    |
+| Heat Tracker     | ✅ Active    | 30s decay cycle |
+| WebSocket        | ✅ Connected | Socket.io       |
 
 ### Database Stats
+
 - **Rooms**: 1 (family-room-demo)
 - **Agents**: 6 (all configured)
 - **Relationships**: 27 (complete family tree)
@@ -198,6 +208,7 @@ npx playwright test tests/e2e/web-ui.spec.ts
 - **Discussions**: Active threads with heat tracking
 
 ### Test Coverage
+
 - **E2E Tests**: 14/14 passing (100%)
 - **Coverage**: Application Load, Room Management, Messaging, API Integration, Error Handling, UI Elements, Performance
 
@@ -326,6 +337,7 @@ npx playwright test --headed
 ## 🚀 Roadmap
 
 ### Phase 1: Core Infrastructure ✅ COMPLETE
+
 - Database schema + migrations
 - OpenClaw integration
 - Feishu WebSocket integration
@@ -333,6 +345,7 @@ npx playwright test --headed
 - Bidirectional sync
 
 ### Phase 2: Agent Intelligence ✅ COMPLETE
+
 - Heat-based response system
 - Agent selection algorithm
 - @Mention targeting
@@ -341,6 +354,7 @@ npx playwright test --headed
 - Family relationships
 
 ### Phase 3: Polish & Production 🚧 IN PROGRESS
+
 - ✅ Documentation cleanup
 - ✅ Codebase consolidation
 - 🔄 Performance optimization
@@ -373,3 +387,25 @@ MIT
 
 **Last Updated**: 2026-03-30  
 **Version**: 2.0 (Phase 2 Complete)
+
+---
+
+## 📊 Code Coverage
+
+Coverage reports are generated locally using Istanbul/NYC:
+
+```bash
+# Run tests with coverage
+npm run test:coverage
+
+# Check coverage against thresholds
+npm run test:coverage:check
+
+# View HTML report
+open coverage/unit/index.html
+```
+
+**Current Coverage**: 7.5% lines, 16.4% functions (baseline)
+**Target**: 80%+ across all metrics
+
+**Why no Codecov?**: We keep coverage reports local for simplicity and privacy. HTML reports provide all needed insights without external service dependencies.

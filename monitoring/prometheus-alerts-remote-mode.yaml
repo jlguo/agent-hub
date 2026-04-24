@@ -1,0 +1,142 @@
+# Prometheus Alert Rules for Remote Mode
+# These alerts monitor SSH tunnel health, OpenClaw Gateway connectivity, and overall system health
+
+groups:
+  - name: remote-mode-alerts
+    interval: 30s
+    rules:
+      # Critical: SSH Tunnel Down
+      - alert: SSHTunnelDown
+        expr: openclaw_ssh_tunnel_connected == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SSH Tunnel to OpenClaw Gateway is down"
+          description: "SSH tunnel to {{ $labels.host }} has been disconnected for more than 1 minute"
+          runbook_url: "https://github.com/agent-hub/agent-hub/blob/main/docs/TROUBLESHOOTING.md#ssh-tunnel-down"
+
+      # Warning: Frequent Tunnel Reconnections
+      - alert: SSHTunnelFrequentReconnects
+        expr: rate(openclaw_ssh_tunnel_reconnects_total[1h]) > 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SSH Tunnel reconnecting frequently"
+          description: "SSH tunnel to {{ $labels.host }} has reconnected {{ $value }} times in the last hour"
+          runbook_url: "https://github.com/agent-hub/agent-hub/blob/main/docs/TROUBLESHOOTING.md#ssh-tunnel-frequent-reconnects"
+
+      # Critical: OpenClaw Gateway Unhealthy
+      - alert: OpenClawGatewayUnhealthy
+        expr: openclaw_gateway_health == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OpenClaw Gateway is unhealthy"
+          description: "OpenClaw Gateway ({{ $labels.gateway_url }}) has been unhealthy for more than 2 minutes"
+          runbook_url: "https://github.com/agent-hub/agent-hub/blob/main/docs/TROUBLESHOOTING.md#openclaw-gateway-unhealthy"
+
+      # Warning: High Agent Response Time
+      - alert: OpenClawAgentResponseTimeHigh
+        expr: histogram_quantile(0.95, rate(openclaw_agent_response_duration_seconds_bucket[5m])) > 60
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OpenClaw agent response time is high"
+          description: "95th percentile agent response time is {{ $value }}s (threshold: 60s)"
+          runbook_url: "https://github.com/agent-hub/agent-hub/blob/main/docs/TROUBLESHOOTING.md#high-agent-response-time"
+
+      # Critical: Agent Response Time Very High
+      - alert: OpenClawAgentResponseTimeVeryHigh
+        expr: histogram_quantile(0.95, rate(openclaw_agent_response_duration_seconds_bucket[5m])) > 120
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OpenClaw agent response time is very high"
+          description: "95th percentile agent response time is {{ $value }}s (threshold: 120s)"
+          runbook_url: "https://github.com/agent-hub/agent-hub/blob/main/docs/TROUBLESHOOTING.md#very-high-agent-response-time"
+
+      # Warning: High Agent Request Failure Rate
+      - alert: OpenClawAgentRequestFailureRateHigh
+        expr: |
+          sum(rate(openclaw_agent_requests_total{status="failure"}[5m])) by (agent_name)
+          /
+          sum(rate(openclaw_agent_requests_total[5m])) by (agent_name)
+          > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High agent request failure rate"
+          description: "Agent {{ $labels.agent_name }} has {{ $value | humanizePercentage }} failure rate"
+          runbook_url: "https://github.com/agent-hub/agent-hub/blob/main/docs/TROUBLESHOOTING.md#high-failure-rate"
+
+      # Warning: SSH Tunnel Latency High
+      - alert: SSHTunnelLatencyHigh
+        expr: histogram_quantile(0.95, rate(openclaw_ssh_tunnel_latency_seconds_bucket[5m])) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SSH tunnel latency is high"
+          description: "95th percentile SSH tunnel latency is {{ $value }}s (threshold: 1s)"
+          runbook_url: "https://github.com/agent-hub/agent-hub/blob/main/docs/TROUBLESHOOTING.md#high-ssh-latency"
+
+      # Critical: Health Check Failures
+      - alert: HealthCheckFailures
+        expr: rate(openclaw_health_check_failures_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Health checks are failing"
+          description: "{{ $labels.component }} health check ({{ $labels.check_type }}) is failing at {{ $value }} per second"
+          runbook_url: "https://github.com/agent-hub/agent-hub/blob/main/docs/TROUBLESHOOTING.md#health-check-failures"
+
+      # Info: Long Time Since Last Successful Health Check
+      - alert: LastHealthCheckOld
+        expr: (time() - openclaw_last_successful_health_check_timestamp) > 300
+        for: 1m
+        labels:
+          severity: info
+        annotations:
+          summary: "No successful health check for 5+ minutes"
+          description: "{{ $labels.component }} last successful health check was {{ $value | humanizeDuration }} ago"
+          runbook_url: "https://github.com/agent-hub/agent-hub/blob/main/docs/TROUBLESHOOTING.md#old-health-check"
+
+      # Critical: Backend Pod Down (Kubernetes only)
+      - alert: BackendPodDown
+        expr: kube_pod_status_phase{namespace="agent-hub", pod=~".*backend.*", phase="Failed"} == 1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend pod is down"
+          description: "Backend pod {{ $labels.pod }} has been in Failed state for more than 2 minutes"
+          runbook_url: "https://github.com/agent-hub/agent-hub/blob/main/docs/TROUBLESHOOTING.md#backend-pod-down"
+
+      # Warning: Backend Pod Restarting
+      - alert: BackendPodRestarting
+        expr: rate(kube_pod_container_status_restarts_total{namespace="agent-hub", pod=~".*backend.*"}[1h]) > 2
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Backend pod is restarting frequently"
+          description: "Backend pod {{ $labels.pod }} has restarted {{ $value }} times in the last hour"
+          runbook_url: "https://github.com/agent-hub/agent-hub/blob/main/docs/TROUBLESHOOTING.md#backend-pod-restarting"
+
+      # Info: SSH Tunnel About to Expire (if using time-limited certs)
+      - alert: SSHTunnelCertificateExpiringSoon
+        expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 7
+        for: 1h
+        labels:
+          severity: info
+        annotations:
+          summary: "SSH certificate expiring soon"
+          description: "SSH certificate for {{ $labels.instance }} expires in {{ $value | humanizeDuration }}"
+          runbook_url: "https://github.com/agent-hub/agent-hub/blob/main/docs/TROUBLESHOOTING.md#certificate-expiring"

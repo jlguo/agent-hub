@@ -1,0 +1,334 @@
+{
+  "dashboard": {
+    "title": "Agent Hub - Remote Mode Monitoring",
+    "description": "Monitor SSH tunnel health, OpenClaw Gateway connectivity, and agent performance for remote mode deployments",
+    "tags": ["agent-hub", "remote-mode", "openclaw"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "type": "stat",
+        "title": "SSH Tunnel Status",
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+        "targets": [
+          {
+            "expr": "openclaw_ssh_tunnel_connected",
+            "legendFormat": "{{host}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              { "type": "value", "options": { "0": { "text": "Disconnected", "color": "red" } } },
+              { "type": "value", "options": { "1": { "text": "Connected", "color": "green" } } }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": null, "color": "red" },
+                { "value": 1, "color": "green" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "type": "stat",
+        "title": "OpenClaw Gateway Health",
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+        "targets": [
+          {
+            "expr": "openclaw_gateway_health",
+            "legendFormat": "{{mode}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              { "type": "value", "options": { "0": { "text": "Unhealthy", "color": "red" } } },
+              { "type": "value", "options": { "1": { "text": "Healthy", "color": "green" } } }
+            ]
+          }
+        }
+      },
+      {
+        "id": 3,
+        "type": "stat",
+        "title": "Agent Response Time (p95)",
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(openclaw_agent_response_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": null, "color": "green" },
+                { "value": 30, "color": "yellow" },
+                { "value": 60, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "type": "stat",
+        "title": "Tunnel Uptime",
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+        "targets": [
+          {
+            "expr": "openclaw_ssh_tunnel_uptime_seconds",
+            "legendFormat": "{{host}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "decimals": 0
+          }
+        }
+      },
+      {
+        "id": 5,
+        "type": "timeseries",
+        "title": "SSH Tunnel Latency",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(openclaw_ssh_tunnel_latency_seconds_bucket[5m]))",
+            "legendFormat": "p50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(openclaw_ssh_tunnel_latency_seconds_bucket[5m]))",
+            "legendFormat": "p95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(openclaw_ssh_tunnel_latency_seconds_bucket[5m]))",
+            "legendFormat": "p99",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "custom": {
+              "lineWidth": 2,
+              "fillOpacity": 20,
+              "gradientMode": "opacity"
+            }
+          }
+        }
+      },
+      {
+        "id": 6,
+        "type": "timeseries",
+        "title": "Agent Response Time",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(openclaw_agent_response_duration_seconds_bucket[5m]))",
+            "legendFormat": "p50 - {{agent_name}}",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(openclaw_agent_response_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95 - {{agent_name}}",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "custom": {
+              "lineWidth": 2,
+              "fillOpacity": 20
+            }
+          }
+        }
+      },
+      {
+        "id": 7,
+        "type": "timeseries",
+        "title": "Agent Requests per Second",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+        "targets": [
+          {
+            "expr": "sum(rate(openclaw_agent_requests_total[1m])) by (agent_name)",
+            "legendFormat": "{{agent_name}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "lineWidth": 2,
+              "fillOpacity": 30
+            }
+          }
+        }
+      },
+      {
+        "id": 8,
+        "type": "timeseries",
+        "title": "Agent Request Failures",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+        "targets": [
+          {
+            "expr": "sum(rate(openclaw_agent_requests_total{status=\"failure\"}[1m])) by (agent_name)",
+            "legendFormat": "{{agent_name}} - failures",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "fixedColor": "red" },
+            "custom": {
+              "lineWidth": 2,
+              "fillOpacity": 40
+            }
+          }
+        }
+      },
+      {
+        "id": 9,
+        "type": "table",
+        "title": "Health Check Status",
+        "gridPos": { "h": 6, "w": 24, "x": 0, "y": 20 },
+        "targets": [
+          {
+            "expr": "openclaw_last_successful_health_check_timestamp",
+            "legendFormat": "{{component}}",
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "calculateField",
+            "options": {
+              "mode": "reduceRow",
+              "reduce": {
+                "reducer": "last"
+              },
+              "alias": "Last Check"
+            }
+          },
+          {
+            "id": "addFieldFromCalculation",
+            "options": {
+              "binary": {
+                "left": "Last Check",
+                "reducer": "last",
+                "right": "__unixTime"
+              },
+              "alias": "Seconds Ago"
+            }
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "center"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": null, "color": "green" },
+                { "value": 300, "color": "yellow" },
+                { "value": 600, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 10,
+        "type": "stat",
+        "title": "Tunnel Reconnections (1h)",
+        "gridPos": { "h": 4, "w": 8, "x": 0, "y": 26 },
+        "targets": [
+          {
+            "expr": "sum(increase(openclaw_ssh_tunnel_reconnects_total[1h]))",
+            "legendFormat": "Reconnects",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": null, "color": "green" },
+                { "value": 3, "color": "yellow" },
+                { "value": 10, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 11,
+        "type": "stat",
+        "title": "Health Check Failures (1h)",
+        "gridPos": { "h": 4, "w": 8, "x": 8, "y": 26 },
+        "targets": [
+          {
+            "expr": "sum(increase(openclaw_health_check_failures_total[1h]))",
+            "legendFormat": "Failures",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": null, "color": "green" },
+                { "value": 5, "color": "yellow" },
+                { "value": 20, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 12,
+        "type": "stat",
+        "title": "System Uptime",
+        "gridPos": { "h": 4, "w": 8, "x": 16, "y": 26 },
+        "targets": [
+          {
+            "expr": "process_uptime_seconds",
+            "legendFormat": "Uptime",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "decimals": 0
+          }
+        }
+      }
+    ]
+  }
+}

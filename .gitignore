@@ -1,1 +1,8 @@
+/.env
 node_modules/
+playwright-report/
+test-results/
+*.tsbuildinfo
+prisma/dev.db
+server/coverage/
+tests/e2e/screenshots/

@@ -1,0 +1,47 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.prometheusRules.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "agent-hub.fullname" . }}-alerts
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agent-hub.labels" . | nindent 4 }}
+    release: {{ .Release.Name }}
+spec:
+  groups:
+  - name: agent-hub.rules
+    rules:
+    - alert: AgentHubPodDown
+      expr: |
+        kube_pod_status_phase{namespace="{{ .Release.Namespace }}",phase="Running"} == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Agent Hub pod is down"
+        description: "Pod {{ "{{" }} $labels.pod {{ "}}" }} has been down for more than 5 minutes"
+    
+    - alert: AgentHubHighErrorRate
+      expr: |
+        sum(rate(http_requests_total{namespace="{{ .Release.Namespace }}",status=~"5.."}[5m])) 
+        / sum(rate(http_requests_total{namespace="{{ .Release.Namespace }}"}[5m])) > 0.05
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "High error rate in Agent Hub"
+        description: "Error rate is {{ "{{" }} $value | humanizePercentage {{ "}}" }} (>5%)"
+    
+    - alert: AgentHubHighLatency
+      expr: |
+        histogram_quantile(0.95, 
+          sum(rate(http_request_duration_seconds_bucket{namespace="{{ .Release.Namespace }}"}[5m])) 
+          by (le)
+        ) > 2
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High latency in Agent Hub"
+        description: "P95 latency is {{ "{{" }} $value | humanizeDuration {{ "}}" }} (>2s)"
+{{- end }}

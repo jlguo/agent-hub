@@ -12,12 +12,12 @@ interface NormalizedMessage {
   roomId: string;
   senderType: 'human' | 'agent';
   content: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 /**
  * Feishu Official SDK Service
- * 
+ *
  * Uses @larksuiteoapi/node-sdk for WebSocket-based event handling.
  * No manual authentication needed - SDK handles everything.
  */

@@ -6,7 +6,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
 }
 
 // Room - represents a conversation space (e.g., "Family")
@@ -26,11 +26,6 @@ model Room {
   messages    Message[]
   discussions Discussion[]
   sessions    Session[]
-  
-  // OpenClaw session tracking (legacy - use Session model)
-  openclawSessionId String?
-  sessionMaxAge     Int      @default(86400) // 24 hours in seconds
-  sessionCreatedAt  DateTime?
 }
 
 // Agent - an AI persona in a room
@@ -61,7 +56,10 @@ model Agent {
   
   // Messages from this agent
   messages Message[]
-  
+
+  // Discussion participation
+  discussionParticipants DiscussionParticipant[]
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   
@@ -83,6 +81,7 @@ model Relationship {
   createdAt   DateTime @default(now())
   
   @@unique([agentAId, agentBId])
+  @@index([agentBId])
 }
 
 // Message - conversation history
@@ -135,8 +134,8 @@ model Discussion {
   heatScore  Int       @default(0) // Calculated field (0-100)
   status     String    @default("active") // active, cooling, archived
   
-  // Participants (stored as JSON array of agent IDs)
-  participants String? // JSON array: ["agent1", "agent2"]
+  // Participants via relation (replaces JSON string field)
+  participants DiscussionParticipant[]
   
   messages   Message[] // Messages in this discussion
   
@@ -146,4 +145,18 @@ model Discussion {
   
   @@index([roomId, status])
   @@index([roomId, createdAt]) // For recent discussions
+}
+
+// DiscussionParticipant - join table for Discussion-Agent many-to-many
+// Replaces the JSON string `participants` field for proper querying
+model DiscussionParticipant {
+  id           String     @id @default(uuid())
+  discussionId String
+  agentId      String
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  agent        Agent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  joinedAt     DateTime   @default(now())
+
+  @@unique([discussionId, agentId])
+  @@index([agentId])
 }

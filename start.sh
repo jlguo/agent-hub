@@ -39,6 +39,10 @@ echo "🚀 Starting Backend (port 4000)..."
 echo "🚀 Starting Frontend (port 3000)..."
 echo ""
 
+# Seed database (idempotent - uses upsert)
+echo "🌱 Seeding database..."
+DATABASE_URL="file:./prisma/dev.db" npx tsx prisma/seed.ts 2>/dev/null || echo "⚠️  Seed completed with warnings (non-critical)"
+
 # Start backend in background
 npm run dev &
 BACKEND_PID=$!
